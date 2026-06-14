@@ -4,42 +4,160 @@
 \usepackage{hyperref}
 \usepackage{url}
 \usepackage{booktabs}
-\title{Actuator Asymmetry as Policy State: ICLR Main-Conference Gate Archive}
+\usepackage{graphicx}
+
+\graphicspath{{../figures/}}
+
+\title{Actuator Asymmetry as Policy State:\\A Negative ICLR-Main Evidence Audit}
 \author{Anonymous Authors}
+
 \begin{document}
 \maketitle
+
 \begin{abstract}
-This document is not an ICLR main-conference submission. It is the v3 main-conference gate for a generated robotics draft about robot adaptation and control. The original research bet was: Treat actuator asymmetry as latent policy state rather than calibration noise. After a stricter hostile review, the honest terminal decision is \textbf{KILL/ARCHIVE}. Submission-hardening version: v3.
+Robotic control stacks often treat actuator mismatch as calibration noise: estimate a scalar gain, widen a robustness tube, or let an adaptive controller absorb residual error. The hypothesis tested here is stricter: left-right, sign-dependent, and time-varying actuator asymmetry should be represented as latent policy state. We rebuilt this generated paper around a deterministic local benchmark with four robotic control tasks, five asymmetry-shift splits, eight methods, seven seeds, 40,320 main rollouts, 7,056 ablation rollouts, and 100,800 stress rollouts. The local evidence is useful but not submission-ready. On the combined hard-shift split, the latent-asymmetry policy reaches 0.151 task success versus 0.099 for the strongest success baseline, online system identification, with a paired success gain of $0.052 \pm 0.025$. It also improves tracking error over the best non-oracle baseline, but not safety violation. At maximum combined stress, it reaches 0.091 success versus 0.054 for robust tube MPC and 0.050 for online ID. Because the evidence is entirely local and synthetic, lacks robot hardware or accepted high-fidelity simulator validation, and does not dominate safety, the honest terminal decision is \textbf{KILL/ARCHIVE} rather than ICLR-main submission.
 \end{abstract}
 
-\section{Gate Decision}
-The v2 paper was workshop-only. Under the active ICLR-main standard, that is insufficient. The local artifacts contain synthetic multi-seed diagnostics, but no real-robot validation, high-fidelity simulator benchmark, trained world-action model, implemented real baselines, or manual full-paper related-work synthesis. These missing items are not recoverable by editing text or rerunning the synthetic script.
+\section{Terminal Decision}
+\textbf{Decision: KILL/ARCHIVE for ICLR main.} The v4 repository contains a paper-specific actuator-asymmetry benchmark, implemented control baselines, ablations, stress sweeps, figures, and reproducibility files. The mechanism is promising in simulation: explicit asymmetry state improves success and tracking under hard actuator shift. However, the project does not clear an ICLR-main readiness bar because the evidence is local-only, not hardware-backed, not externally benchmarked, and safety is not a decisive win.
 
-\section{Fatal ICLR-Main Blockers}
+\section{Research Question}
+The intended claim was:
+\begin{quote}
+Treat actuator asymmetry as latent policy state rather than calibration noise.
+\end{quote}
+This is a meaningful distinction. A scalar calibration estimate can compensate average actuator weakness, but it cannot represent sign-specific deadzones, saturation asymmetry, left-right gain imbalance, latency, and thermal drift as state that persists and updates during rollout. A policy-state formulation should adapt faster when the physical asymmetry changes, and should expose which parts of the mechanism matter.
+
+\section{Benchmark}
+The v4 benchmark simulates four control settings:
 \begin{itemize}
-\item Evidence is synthetic and generated from a shared batch template.
-\item Baselines are diagnostic probability models, not implemented competing robot systems.
-\item Ablations do not correspond to a trained model checkpoint.
-\item No hardware, high-fidelity benchmark, qualitative rollouts, or failure videos are available.
-\item Related work is based on pool slices and hostile metadata, not a manual full-paper synthesis.
-\item Claims would be misleading if framed as ICLR-main empirical robotics evidence.
+\item \textbf{corridor tracking} with differential-drive left-right asymmetry.
+\item \textbf{pivot alignment} with asymmetric wheel response.
+\item \textbf{two-joint reach} with joint-pair gain and saturation mismatch.
+\item \textbf{gripper slide insertion} with sign-dependent actuation errors.
+\end{itemize}
+Each episode samples a target, latent actuator gains, sign-specific deadzones, saturation limits, latency, drift, and observation noise. The five evaluation splits are:
+\begin{itemize}
+\item \textbf{balanced nominal:} mild actuator mismatch.
+\item \textbf{left-right gain shift:} large directional or joint-pair gain asymmetry.
+\item \textbf{deadzone saturation shift:} sign-dependent actuation loss.
+\item \textbf{thermal drift shift:} asymmetry evolves during rollout.
+\item \textbf{combined hard shift:} gain, deadzone, saturation, latency, drift, and noise together.
+\end{itemize}
+Metrics include task success, tracking error, safety violation, actuator energy, adaptation regret, asymmetry estimation error, and calibration error.
+
+\section{Methods}
+We compare eight controllers:
+\begin{itemize}
+\item \textbf{Nominal policy:} ignores actuator mismatch.
+\item \textbf{Domain-randomized policy:} uses conservative actuation learned from random mismatch.
+\item \textbf{Scalar gain calibration:} estimates one gain correction.
+\item \textbf{Online system ID:} updates a residual actuator estimate during rollout.
+\item \textbf{Adaptive MPC:} replans with online adaptation.
+\item \textbf{Robust tube MPC:} widens action margins against bounded mismatch.
+\item \textbf{Latent asymmetry policy state:} the proposed controller with persistent sign-specific asymmetry state.
+\item \textbf{Oracle asymmetry state:} hidden-state upper bound.
 \end{itemize}
 
-\section{Hostile Prior-Work Pressure}
-The closest local hostile records include:
+\section{Main Results}
+Table~\ref{tab:main} reports the combined hard-shift split. The proposed method has the best non-oracle task success and the lowest non-oracle tracking error. The paired task-success gain over the strongest success baseline is $0.05159 \pm 0.02483$. This is a real local signal. The problem is that safety does not dominate: online system ID has a slightly lower safety-violation rate.
+
+\begin{table}[h]
+\centering
+\caption{Combined hard-shift results over seven seeds. Confidence intervals are 95\% intervals over seed means. Lower tracking, safety, energy, and asymmetry error are better.}
+\label{tab:main}
+\begin{tabular}{lrrrrr}
+\toprule
+Method & Success & Tracking & Safety & Energy & Asym. err. \\
+\midrule
+Nominal & $0.077 \pm 0.018$ & $0.684$ & $0.196$ & $0.855$ & $0.668$ \\
+Domain random. & $0.076 \pm 0.014$ & $0.702$ & $0.220$ & $0.823$ & $0.669$ \\
+Scalar calibration & $0.080 \pm 0.018$ & $0.698$ & $0.208$ & $0.899$ & $0.342$ \\
+Online system ID & $0.099 \pm 0.012$ & $0.666$ & $\mathbf{0.184}$ & $1.027$ & $0.339$ \\
+Adaptive MPC & $0.076 \pm 0.017$ & $0.686$ & $0.202$ & $0.989$ & $0.321$ \\
+Robust tube MPC & $0.061 \pm 0.012$ & $0.716$ & $0.235$ & $\mathbf{0.814}$ & $0.432$ \\
+Latent asymmetry state & $\mathbf{0.151 \pm 0.016}$ & $\mathbf{0.661}$ & $0.187$ & $1.126$ & $\mathbf{0.294}$ \\
+Oracle asymmetry state & $0.206 \pm 0.035$ & $0.629$ & $0.161$ & $1.233$ & $0.284$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{asymmetry_success.png}
+\caption{Task success across actuator-shift splits. The latent-state controller improves hard-shift success in the local benchmark.}
+\label{fig:success}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.86\linewidth]{asymmetry_tracking.png}
+\caption{Success and tracking error on the combined hard-shift split. The proposed controller improves success and tracking, but the absolute success rate remains low.}
+\label{fig:tracking}
+\end{figure}
+
+\section{Ablations}
+The ablations mostly support the intended mechanism. Removing persistent memory drops success from 0.151 to 0.085. Removing deadzone and saturation state drops success to 0.096. A scalar-only latent gain reaches only 0.094, which supports the claim that scalar calibration is insufficient. The safety-clipping ablation improves tracking but raises safety violation to 0.257, showing that part of the mechanism is safety-relevant even though the full method does not beat online ID on safety.
+
+\begin{table}[h]
+\centering
+\caption{Latent-asymmetry ablations on combined hard shift.}
+\label{tab:ablation}
+\begin{tabular}{lrrrr}
+\toprule
+Ablation & Success & Tracking & Safety & Asym. err. \\
+\midrule
+Full latent-asymmetry state & $\mathbf{0.151 \pm 0.016}$ & $0.661$ & $0.187$ & $0.294$ \\
+Minus persistent memory & $0.085 \pm 0.020$ & $0.687$ & $0.197$ & $\mathbf{0.246}$ \\
+Minus sign-specific asymmetry & $0.125 \pm 0.023$ & $0.671$ & $0.190$ & $0.304$ \\
+Minus deadzone/saturation state & $0.096 \pm 0.014$ & $0.680$ & $0.197$ & $0.295$ \\
+Minus online residual update & $0.099 \pm 0.021$ & $0.671$ & $0.190$ & $\mathbf{0.246}$ \\
+Scalar-only latent gain & $0.094 \pm 0.019$ & $0.677$ & $0.199$ & $0.330$ \\
+No safety-aware clipping & $0.110 \pm 0.022$ & $\mathbf{0.633}$ & $0.257$ & $0.298$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.88\linewidth]{asymmetry_ablation.png}
+\caption{Ablation success on combined hard shift. Persistent latent memory and non-scalar asymmetry representation are important in the local benchmark.}
+\label{fig:ablation}
+\end{figure}
+
+\section{Stress Tests}
+Stress sweeps vary gain asymmetry, deadzone/saturation, latency, thermal drift, and combined stress from 0.0 to 1.0. At maximum combined stress, the proposed controller reaches 0.091 task success. Domain randomization reaches 0.038, online system ID reaches 0.050, adaptive MPC reaches 0.050, and robust tube MPC reaches 0.054. The latent-state controller also reduces safety violation to 0.329 versus 0.363 for online ID and 0.423 for robust tube MPC at this stress point. This is encouraging, but it remains a deterministic local benchmark.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.88\linewidth]{asymmetry_stress_sweep.png}
+\caption{Combined stress sweep. The proposed controller retains the strongest non-oracle success at high stress, but the evidence is not external validation.}
+\label{fig:stress}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.84\linewidth]{asymmetry_failures.png}
+\caption{Safety violation and asymmetry-estimation error on combined hard shift. The method improves estimation error, but safety is not a decisive win.}
+\label{fig:failures}
+\end{figure}
+
+\section{Why This Is Not Submission-Ready}
+The project fails the ICLR-main readiness gate for three reasons.
 \begin{itemize}
-\item Maximum principle for stochastic optimal control problem of finite state forward-backward stochastic difference systems (2022)
-\item Nonlinear Model Predictive Control with Enhanced Actuator Model for Multi-Rotor Aerial Vehicles with Generic Designs (2020)
-\item Fast, Safe and Robust Motion Planning for Autonomous Vehicles Based on Robust Control Invariant Tubes (2025)
-\item Adaptive State Tracking Control with Actuator Nonlinearities and Failures (2020)
-\item Observer-based robust control for flexible-joint robot manipulators: A state-dependent Riccati equation-based approach (2020)
+\item \textbf{Evidence ceiling.} The benchmark is deterministic and reproducible, but local and synthetic. There is no robot hardware, accepted simulator benchmark, or public robot dataset evaluation.
+\item \textbf{Safety is not dominant.} The proposed method improves success and tracking, but online system ID has slightly lower hard-split safety violation.
+\item \textbf{Absolute performance is low.} Hard-shift success remains 0.151, far below what a mature robotics submission would need without additional validation and analysis.
 \end{itemize}
-These works make generic world models, uncertainty, model-based planning, and robot policy robustness crowded. Without real empirical evidence, the remaining novelty boundary is too weak for ICLR main.
 
-\section{What Remains Useful}
-The archive is still useful as an idea seed and reproducibility scaffold. The synthetic code, stress-test CSVs, reviewer attacks, and novelty-boundary docs can inform a future project. The correct next step is not more paper polishing; it is new evidence: implemented models, real baselines, manual related work, and robot or high-fidelity simulator validation.
+\section{Reproducibility}
+Run the benchmark from the repository root:
+\begin{verbatim}
+python src\run_experiment.py
+\end{verbatim}
+The script writes rollout CSVs, seed-level metrics, pairwise statistics, ablations, stress sweeps, negative cases, summary text, and the figures used in this manuscript. The canonical local PDF is \texttt{C:/Users/wangz/Downloads/86.pdf}.
 
-\section{Terminal Action}
-Decision: \textbf{KILL/ARCHIVE for ICLR main}. Do not submit this paper to ICLR main in the current form. Revival requires a substantially new empirical project.
+\section{Conclusion}
+Actuator asymmetry as latent policy state remains a worthwhile research direction. The v4 evidence shows a real local signal: explicit asymmetry state beats scalar calibration, online ID, adaptive MPC, and robust tube MPC on hard-shift success and tracking. But local simulation evidence with incomplete safety dominance is not an ICLR-main submission. The honest terminal action is \textbf{KILL/ARCHIVE}.
 
 \end{document}
