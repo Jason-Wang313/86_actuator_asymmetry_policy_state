@@ -192,3 +192,17 @@ Attack: No meaningful recoverable ICLR-main issue remains after archiving.
 Verdict: Terminal condition reached.
 
 Action: Mark KILL_ARCHIVE and stop.
+
+## ICLR Main Gate Round 28
+Attack: The 2026-06-15 rerun has enough local evidence to upgrade the paper.
+
+Verdict: Not enough for ICLR main. The success gain over online system ID is real (`0.05159 +/- 0.02483`) and ablations mostly support the mechanism, but hard-split safety is slightly worse than online system ID (`0.18730` vs `0.18396`) and the evidence remains local synthetic only.
+
+Action: Preserve `KILL_ARCHIVE` while documenting the result as a promising near miss.
+
+## ICLR Main Gate Round 29
+Attack: Maximum combined stress safety favors the proposed method, so the safety blocker is overstated.
+
+Verdict: Still insufficient. Maximum-stress safety is encouraging, but the main combined hard-shift safety gate remains non-dominant, and no real robot/high-fidelity validation exists.
+
+Action: State the stress robustness as useful evidence, not as submission readiness.
