@@ -21,6 +21,8 @@ Robotic control stacks often treat actuator mismatch as calibration noise: estim
 \section{Terminal Decision}
 \textbf{Decision: KILL/ARCHIVE for ICLR main.} The v4 repository contains a paper-specific actuator-asymmetry benchmark, implemented control baselines, ablations, stress sweeps, figures, and reproducibility files. The mechanism is promising in simulation: explicit asymmetry state improves success and tracking under hard actuator shift. However, the project does not clear an ICLR-main readiness bar because the evidence is local-only, not hardware-backed, not externally benchmarked, and safety is not a decisive win.
 
+All reported CSV-backed results were regenerated from source on 2026-06-15. The rerun reproduced the same terminal outcome: \textbf{KILL/ARCHIVE}.
+
 \section{Research Question}
 The intended claim was:
 \begin{quote}
@@ -62,8 +64,10 @@ We compare eight controllers:
 \section{Main Results}
 Table~\ref{tab:main} reports the combined hard-shift split. The proposed method has the best non-oracle task success and the lowest non-oracle tracking error. The paired task-success gain over the strongest success baseline is $0.05159 \pm 0.02483$. This is a real local signal. The problem is that safety does not dominate: online system ID has a slightly lower safety-violation rate.
 
-\begin{table}[h]
+\begin{table}[tbp]
 \centering
+\small
+\setlength{\tabcolsep}{3pt}
 \caption{Combined hard-shift results over seven seeds. Confidence intervals are 95\% intervals over seed means. Lower tracking, safety, energy, and asymmetry error are better.}
 \label{tab:main}
 \begin{tabular}{lrrrrr}
@@ -82,14 +86,14 @@ Oracle asymmetry state & $0.206 \pm 0.035$ & $0.629$ & $0.161$ & $1.233$ & $0.28
 \end{tabular}
 \end{table}
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.92\linewidth]{asymmetry_success.png}
 \caption{Task success across actuator-shift splits. The latent-state controller improves hard-shift success in the local benchmark.}
 \label{fig:success}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.86\linewidth]{asymmetry_tracking.png}
 \caption{Success and tracking error on the combined hard-shift split. The proposed controller improves success and tracking, but the absolute success rate remains low.}
@@ -99,8 +103,10 @@ Oracle asymmetry state & $0.206 \pm 0.035$ & $0.629$ & $0.161$ & $1.233$ & $0.28
 \section{Ablations}
 The ablations mostly support the intended mechanism. Removing persistent memory drops success from 0.151 to 0.085. Removing deadzone and saturation state drops success to 0.096. A scalar-only latent gain reaches only 0.094, which supports the claim that scalar calibration is insufficient. The safety-clipping ablation improves tracking but raises safety violation to 0.257, showing that part of the mechanism is safety-relevant even though the full method does not beat online ID on safety.
 
-\begin{table}[h]
+\begin{table}[tbp]
 \centering
+\small
+\setlength{\tabcolsep}{3pt}
 \caption{Latent-asymmetry ablations on combined hard shift.}
 \label{tab:ablation}
 \begin{tabular}{lrrrr}
@@ -118,7 +124,7 @@ No safety-aware clipping & $0.110 \pm 0.022$ & $\mathbf{0.633}$ & $0.257$ & $0.2
 \end{tabular}
 \end{table}
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.88\linewidth]{asymmetry_ablation.png}
 \caption{Ablation success on combined hard shift. Persistent latent memory and non-scalar asymmetry representation are important in the local benchmark.}
@@ -128,14 +134,14 @@ No safety-aware clipping & $0.110 \pm 0.022$ & $\mathbf{0.633}$ & $0.257$ & $0.2
 \section{Stress Tests}
 Stress sweeps vary gain asymmetry, deadzone/saturation, latency, thermal drift, and combined stress from 0.0 to 1.0. At maximum combined stress, the proposed controller reaches 0.091 task success. Domain randomization reaches 0.038, online system ID reaches 0.050, adaptive MPC reaches 0.050, and robust tube MPC reaches 0.054. The latent-state controller also reduces safety violation to 0.329 versus 0.363 for online ID and 0.423 for robust tube MPC at this stress point. This is encouraging, but it remains a deterministic local benchmark.
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.88\linewidth]{asymmetry_stress_sweep.png}
 \caption{Combined stress sweep. The proposed controller retains the strongest non-oracle success at high stress, but the evidence is not external validation.}
 \label{fig:stress}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[tbp]
 \centering
 \includegraphics[width=0.84\linewidth]{asymmetry_failures.png}
 \caption{Safety violation and asymmetry-estimation error on combined hard shift. The method improves estimation error, but safety is not a decisive win.}
@@ -155,7 +161,7 @@ Run the benchmark from the repository root:
 \begin{verbatim}
 python src\run_experiment.py
 \end{verbatim}
-The script writes rollout CSVs, seed-level metrics, pairwise statistics, ablations, stress sweeps, negative cases, summary text, and the figures used in this manuscript. The canonical local PDF is \texttt{C:/Users/wangz/Downloads/86.pdf}.
+The script writes rollout CSVs, seed-level metrics, pairwise statistics, ablations, stress sweeps, negative cases, summary text, and the figures used in this manuscript. The 2026-06-15 audit verified 40,320 main rollout rows, 7,056 ablation rollout rows, 100,800 stress rollout rows, and seven seeds. The canonical local PDF is \texttt{C:/Users/wangz/Downloads/86.pdf}.
 
 \section{Conclusion}
 Actuator asymmetry as latent policy state remains a worthwhile research direction. The v4 evidence shows a real local signal: explicit asymmetry state beats scalar calibration, online ID, adaptive MPC, and robust tube MPC on hard-shift success and tracking. But local simulation evidence with incomplete safety dominance is not an ICLR-main submission. The honest terminal action is \textbf{KILL/ARCHIVE}.
