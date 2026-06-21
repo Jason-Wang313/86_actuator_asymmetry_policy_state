@@ -5,165 +5,1676 @@
 \usepackage{url}
 \usepackage{booktabs}
 \usepackage{graphicx}
-
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\hypersetup{colorlinks=false,pdfborder={0 0 1.8},citebordercolor={0 1 0},linkbordercolor={1 0.55 0},urlbordercolor={0 0.45 1}}
 \graphicspath{{../figures/}}
-
-\title{Actuator Asymmetry as Policy State:\\A Negative ICLR-Main Evidence Audit}
+\newcommand{\methodname}{latent-asymmetry belief policy v5}
+\title{Actuator Asymmetry as Policy State:\\A 25+ Page Negative Submission-Readiness Audit}
 \author{Anonymous Authors}
-
 \begin{document}
 \maketitle
-
 \begin{abstract}
-Robotic control stacks often treat actuator mismatch as calibration noise: estimate a scalar gain, widen a robustness tube, or let an adaptive controller absorb residual error. The hypothesis tested here is stricter: left-right, sign-dependent, and time-varying actuator asymmetry should be represented as latent policy state. We rebuilt this generated paper around a deterministic local benchmark with four robotic control tasks, five asymmetry-shift splits, eight methods, seven seeds, 40,320 main rollouts, 7,056 ablation rollouts, and 100,800 stress rollouts. The local evidence is useful but not submission-ready. On the combined hard-shift split, the latent-asymmetry policy reaches 0.151 task success versus 0.099 for the strongest success baseline, online system identification, with a paired success gain of $0.052 \pm 0.025$. It also improves tracking error over the best non-oracle baseline, but not safety violation. At maximum combined stress, it reaches 0.091 success versus 0.054 for robust tube MPC and 0.050 for online ID. Because the evidence is entirely local and synthetic, lacks robot hardware or accepted high-fidelity simulator validation, and does not dominate safety, the honest terminal decision is \textbf{KILL/ARCHIVE} rather than ICLR-main submission.
+Robotic controllers often treat actuator mismatch as calibration noise: estimate a scalar gain, widen a robustness tube, or let online adaptation absorb the residual. This paper tests the sharper hypothesis that left-right, sign-specific, delayed, and drifting actuator asymmetry should be represented as latent policy state. We rebuilt the archived Paper 86 into a frozen CPU-only v5 audit with 199,680 main rollouts, 15,360 actuator summaries, 33,600 ablation rollouts, 302,400 stress rows, 69,120 fixed-risk rows, and 24 negative cases. On the predefined hard aggregate, \methodname{} reaches 0.146 $\pm$ 0.012 task success, tracking error 0.700, safety violation 0.305, and robust utility -0.462. The strongest non-oracle success baseline, Latent state v4, reaches 0.124 $\pm$ 0.009 task success, tracking error 0.687, and safety violation 0.283. The paired lower95 success bound is 0.005, but the paired tracking upper95 bound is 0.019, the paired safety upper95 bound is 0.030, the mechanism gate fails, fixed-risk coverage at budget 0.05 is zero, and no robot or accepted high-fidelity benchmark evidence exists. The honest terminal decision is therefore \textbf{KILL/ARCHIVE}, not ICLR-main submission.
 \end{abstract}
-
 \section{Terminal Decision}
-\textbf{Decision: KILL/ARCHIVE for ICLR main.} The v4 repository contains a paper-specific actuator-asymmetry benchmark, implemented control baselines, ablations, stress sweeps, figures, and reproducibility files. The mechanism is promising in simulation: explicit asymmetry state improves success and tracking under hard actuator shift. However, the project does not clear an ICLR-main readiness bar because the evidence is local-only, not hardware-backed, not externally benchmarked, and safety is not a decisive win.
-
-All reported CSV-backed results were regenerated from source on 2026-06-15. The rerun reproduced the same terminal outcome: \textbf{KILL/ARCHIVE}.
-
-\section{Research Question}
-The intended claim was:
-\begin{quote}
-Treat actuator asymmetry as latent policy state rather than calibration noise.
-\end{quote}
-This is a meaningful distinction. A scalar calibration estimate can compensate average actuator weakness, but it cannot represent sign-specific deadzones, saturation asymmetry, left-right gain imbalance, latency, and thermal drift as state that persists and updates during rollout. A policy-state formulation should adapt faster when the physical asymmetry changes, and should expose which parts of the mechanism matter.
-
-\section{Benchmark}
-The v4 benchmark simulates four control settings:
-\begin{itemize}
-\item \textbf{corridor tracking} with differential-drive left-right asymmetry.
-\item \textbf{pivot alignment} with asymmetric wheel response.
-\item \textbf{two-joint reach} with joint-pair gain and saturation mismatch.
-\item \textbf{gripper slide insertion} with sign-dependent actuation errors.
-\end{itemize}
-Each episode samples a target, latent actuator gains, sign-specific deadzones, saturation limits, latency, drift, and observation noise. The five evaluation splits are:
-\begin{itemize}
-\item \textbf{balanced nominal:} mild actuator mismatch.
-\item \textbf{left-right gain shift:} large directional or joint-pair gain asymmetry.
-\item \textbf{deadzone saturation shift:} sign-dependent actuation loss.
-\item \textbf{thermal drift shift:} asymmetry evolves during rollout.
-\item \textbf{combined hard shift:} gain, deadzone, saturation, latency, drift, and noise together.
-\end{itemize}
-Metrics include task success, tracking error, safety violation, actuator energy, adaptation regret, asymmetry estimation error, and calibration error.
-
-\section{Methods}
-We compare eight controllers:
-\begin{itemize}
-\item \textbf{Nominal policy:} ignores actuator mismatch.
-\item \textbf{Domain-randomized policy:} uses conservative actuation learned from random mismatch.
-\item \textbf{Scalar gain calibration:} estimates one gain correction.
-\item \textbf{Online system ID:} updates a residual actuator estimate during rollout.
-\item \textbf{Adaptive MPC:} replans with online adaptation.
-\item \textbf{Robust tube MPC:} widens action margins against bounded mismatch.
-\item \textbf{Latent asymmetry policy state:} the proposed controller with persistent sign-specific asymmetry state.
-\item \textbf{Oracle asymmetry state:} hidden-state upper bound.
-\end{itemize}
-
-\section{Main Results}
-Table~\ref{tab:main} reports the combined hard-shift split. The proposed method has the best non-oracle task success and the lowest non-oracle tracking error. The paired task-success gain over the strongest success baseline is $0.05159 \pm 0.02483$. This is a real local signal. The problem is that safety does not dominate: online system ID has a slightly lower safety-violation rate.
-
-\begin{table}[tbp]
-\centering
-\small
-\setlength{\tabcolsep}{3pt}
-\caption{Combined hard-shift results over seven seeds. Confidence intervals are 95\% intervals over seed means. Lower tracking, safety, energy, and asymmetry error are better.}
-\label{tab:main}
-\begin{tabular}{lrrrrr}
+\textbf{Decision: KILL/ARCHIVE for ICLR main.} This document is intentionally submission-shaped but not submission-claiming. The rebuild added a stronger belief-state method, stronger adaptive/control-barrier/fault-observer baselines, fixed gates, stress tests, and appendices that expose every predefined result. The result still does not survive hostile review because the proposed method improves success over v4 but worsens tracking and safety, fails the mechanism gate, fails the fixed-risk deployment gate, and remains synthetic-only.
+The frozen primary comparison is against Latent state v4. Belief state v5 has hard-aggregate success 0.146 $\pm$ 0.012 while Latent state v4 has 0.124 $\pm$ 0.009. That success gain is real in the local benchmark, but the paper does not get to stop at the favorable metric. V5 tracking is 0.700 against the best tracking baseline at 0.687, and v5 safety violation is 0.305 against the best safety baseline at 0.283.
+The paper is valuable as an archive because it says something concrete: explicit asymmetry state can improve task success under actuator faults, but the new belief mechanism is not yet a deployable robotics contribution. A hostile reviewer would focus on safety, risk calibration, and lack of external robot validation, so those failures are the headline rather than the footnote.
+\section{Research Question And Review Threat Model}
+The target claim is not merely that adaptation helps. The target claim is that actuator asymmetry is a state variable: a policy should condition on persistent left-right gain gaps, sign-specific deadzones, saturation asymmetry, latency, thermal drift, and intermittent faults rather than compressing them into one scalar correction. This sits near robust robot control, observer-based adaptation, system identification, residual policies, sim-to-real transfer, and morphology-aware locomotion \citep{pool86_01,pool86_02,pool86_03,pool86_04,pool86_05,pool86_06}.
+The hostile-review threat model is severe. A reviewer can argue that scalar calibration is enough, robust MPC already covers the uncertainty, a recurrent hidden state will learn the asymmetry implicitly, a fault observer is the right abstraction, or that any synthetic-only actuator benchmark is too weak for ICLR-main robotics claims. The v5 protocol encodes those attacks directly as baselines and gates rather than relying on a friendly comparison set.
+\section{Formal Setup}
+Let $x_t\in\mathbb{R}^2$ be the local task state, $u_t=(u^L_t,u^R_t)$ the commanded actuator pair, and $z_t$ the latent actuator-asymmetry state. The simulator uses an asymmetric response family
+\begin{equation}
+a^i_t = \operatorname{clip}\{g^i_t\,\operatorname{sgn}(u^i_{t-\ell})(|u^i_{t-\ell}|-d^i)_+, -s^i, s^i\},\qquad i\in\{L,R\},
+\end{equation}
+where $g^i_t$ drifts thermally, $d^i$ is a sign-sensitive deadzone proxy, $s^i$ is saturation, and $\ell$ is delay. The policy-state hypothesis is that conditioning on an estimate $\hat z_t=(\hat g^L_t,\hat g^R_t,\hat d^L_t,\hat d^R_t,\hat\ell_t,\hat q_t)$ should improve task success without increasing safety violations.
+\paragraph{Proposition 1: scalar calibration can be non-identifiable.}
+Consider two actuators with gains $g^L=1+\delta$ and $g^R=1-\delta$ under a differential command pair. A scalar gain estimate $\bar g$ can match the average forward displacement while leaving the yaw-producing difference $g^L-g^R=2\delta$ unidentified. Therefore a scalar calibration can have small average prediction error while producing systematically wrong steering or joint-pair torques under sign reversal.
+\paragraph{Proposition 2: persistent latent memory helps only under slowly changing asymmetry.}
+If $z_t$ follows a bounded-drift process $\|z_{t+1}-z_t\|\leq\eta$ and the actuator response is locally Lipschitz in $z_t$, an exponentially updated belief state can reduce one-step prediction error by averaging observation noise. If faults switch faster than the memory time constant, the same persistence becomes harmful because the posterior lags behind the true asymmetry. This is why the protocol includes both thermal drift and intermittent-fault stress axes.
+\paragraph{Proposition 3: fixed-risk acceptance is only meaningful with nonzero coverage.}
+Let $\hat r(x_t,u_t,\hat z_t)$ be the reported deployment risk. A budget rule accepts only episodes with $\hat r\leq\rho$. Even if calibration were perfect, the rule gives no deployable policy when coverage is zero. The v5 budget 0.05 result has exactly this pathology: the system can avoid risk only by refusing every episode.
+\section{Frozen Protocol}
+The frozen v5 protocol contains 199,680 main rollouts, 15,360 actuator summaries, 33,600 ablation rollouts, 302,400 stress rows, 69,120 fixed-risk rows, and 24 negative cases. It uses ten seeds, six tasks, eight actuator-shift splits, thirteen main methods, ten ablations, six stress axes, six stress levels, and strict fixed-risk acceptance budgets. The hard aggregate is fixed before execution as intermittent fault, payload/contact shift, and combined hard shift.
+The terminal decision was predeclared. A positive synthetic result required v5 to beat the strongest non-oracle hard-aggregate success baseline by at least 0.030, beat the strongest tracking baseline by at least 0.015, match the strongest safety baseline within 0.002, improve robust utility by at least 0.030, obtain favorable paired bounds, pass mechanism ablations, avoid maximum-stress Pareto domination, and retain fixed-risk coverage at budget 0.05. Any failure means KILL/ARCHIVE.
+\begin{center}
+\scriptsize
+\begin{longtable}{p{0.30\linewidth}rrrrr}
+\caption{Predefined hard-aggregate results over intermittent fault, payload/contact, and combined hard shift. Higher success and utility are better; lower tracking, safety, and asymmetry error are better.}\label{tab:hard}\\
 \toprule
-Method & Success & Tracking & Safety & Energy & Asym. err. \\
+Method & Success & Tracking & Safety & Asym. err. & Utility\\
 \midrule
-Nominal & $0.077 \pm 0.018$ & $0.684$ & $0.196$ & $0.855$ & $0.668$ \\
-Domain random. & $0.076 \pm 0.014$ & $0.702$ & $0.220$ & $0.823$ & $0.669$ \\
-Scalar calibration & $0.080 \pm 0.018$ & $0.698$ & $0.208$ & $0.899$ & $0.342$ \\
-Online system ID & $0.099 \pm 0.012$ & $0.666$ & $\mathbf{0.184}$ & $1.027$ & $0.339$ \\
-Adaptive MPC & $0.076 \pm 0.017$ & $0.686$ & $0.202$ & $0.989$ & $0.321$ \\
-Robust tube MPC & $0.061 \pm 0.012$ & $0.716$ & $0.235$ & $\mathbf{0.814}$ & $0.432$ \\
-Latent asymmetry state & $\mathbf{0.151 \pm 0.016}$ & $\mathbf{0.661}$ & $0.187$ & $1.126$ & $\mathbf{0.294}$ \\
-Oracle asymmetry state & $0.206 \pm 0.035$ & $0.629$ & $0.161$ & $1.233$ & $0.284$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=0.92\linewidth]{asymmetry_success.png}
-\caption{Task success across actuator-shift splits. The latent-state controller improves hard-shift success in the local benchmark.}
-\label{fig:success}
-\end{figure}
-
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=0.86\linewidth]{asymmetry_tracking.png}
-\caption{Success and tracking error on the combined hard-shift split. The proposed controller improves success and tracking, but the absolute success rate remains low.}
-\label{fig:tracking}
-\end{figure}
-
-\section{Ablations}
-The ablations mostly support the intended mechanism. Removing persistent memory drops success from 0.151 to 0.085. Removing deadzone and saturation state drops success to 0.096. A scalar-only latent gain reaches only 0.094, which supports the claim that scalar calibration is insufficient. The safety-clipping ablation improves tracking but raises safety violation to 0.257, showing that part of the mechanism is safety-relevant even though the full method does not beat online ID on safety.
-
-\begin{table}[tbp]
-\centering
-\small
-\setlength{\tabcolsep}{3pt}
-\caption{Latent-asymmetry ablations on combined hard shift.}
-\label{tab:ablation}
-\begin{tabular}{lrrrr}
+\endfirsthead
+\caption[]{Predefined hard-aggregate results over intermittent fault, payload/contact, and combined hard shift. Higher success and utility are better; lower tracking, safety, and asymmetry error are better. (continued)}\\
 \toprule
-Ablation & Success & Tracking & Safety & Asym. err. \\
+Method & Success & Tracking & Safety & Asym. err. & Utility\\
 \midrule
-Full latent-asymmetry state & $\mathbf{0.151 \pm 0.016}$ & $0.661$ & $0.187$ & $0.294$ \\
-Minus persistent memory & $0.085 \pm 0.020$ & $0.687$ & $0.197$ & $\mathbf{0.246}$ \\
-Minus sign-specific asymmetry & $0.125 \pm 0.023$ & $0.671$ & $0.190$ & $0.304$ \\
-Minus deadzone/saturation state & $0.096 \pm 0.014$ & $0.680$ & $0.197$ & $0.295$ \\
-Minus online residual update & $0.099 \pm 0.021$ & $0.671$ & $0.190$ & $\mathbf{0.246}$ \\
-Scalar-only latent gain & $0.094 \pm 0.019$ & $0.677$ & $0.199$ & $0.330$ \\
-No safety-aware clipping & $0.110 \pm 0.022$ & $\mathbf{0.633}$ & $0.257$ & $0.298$ \\
+\endhead
+Nominal & 0.090 $\pm$ 0.011 & 0.700 & 0.288 & 0.539 & -0.568\\
+Domain rand. & 0.078 $\pm$ 0.006 & 0.718 & 0.312 & 0.498 & -0.589\\
+Scalar cal. & 0.087 $\pm$ 0.010 & 0.709 & 0.299 & 0.282 & -0.533\\
+Online ID & 0.108 $\pm$ 0.008 & 0.699 & 0.291 & 0.268 & -0.495\\
+Adaptive MPC & 0.096 $\pm$ 0.005 & 0.713 & 0.310 & 0.254 & -0.520\\
+Robust tube & 0.075 $\pm$ 0.005 & 0.742 & 0.351 & 0.337 & -0.587\\
+CBF-FTC MPC & 0.085 $\pm$ 0.007 & 0.753 & 0.375 & 0.280 & -0.577\\
+UKF observer & 0.114 $\pm$ 0.005 & 0.701 & 0.301 & 0.262 & -0.495\\
+RNN state proxy & 0.118 $\pm$ 0.007 & 0.692 & 0.290 & 0.259 & -0.482\\
+L1 adaptive & 0.094 $\pm$ 0.006 & 0.731 & 0.339 & 0.255 & -0.538\\
+Latent state v4 & 0.124 $\pm$ 0.009 & 0.687 & 0.283 & 0.243 & -0.469\\
+Belief state v5 & 0.146 $\pm$ 0.012 & 0.700 & 0.305 & 0.245 & -0.462\\
+Oracle state & 0.185 $\pm$ 0.011 & 0.690 & 0.306 & 0.244 & -0.421\\
 \bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=0.88\linewidth]{asymmetry_ablation.png}
-\caption{Ablation success on combined hard shift. Persistent latent memory and non-scalar asymmetry representation are important in the local benchmark.}
-\label{fig:ablation}
-\end{figure}
-
+\end{longtable}
+\normalsize
+\end{center}
+\section{Main Evidence}
+Table~\ref{tab:hard} is the core result. Belief state v5 has the highest non-oracle hard-aggregate task success, but it does not dominate the older latent state v4 on tracking, safety, asymmetry error, or confidence-bound utility. This is exactly the kind of mixed result that a short generated paper would overclaim; the expanded audit keeps the unfavorable metrics in the main text.
+\begin{center}
+\scriptsize
+\begin{longtable}{p{0.15\linewidth}p{0.26\linewidth}rrrr}
+\caption{Split-level evidence for the strongest adaptive and fault-observer baselines, v4, v5, and the oracle.}\label{tab:split}\\
+\toprule
+Split & Method & Success & Tracking & Safety & Asym. err.\\
+\midrule
+\endfirsthead
+\caption[]{Split-level evidence for the strongest adaptive and fault-observer baselines, v4, v5, and the oracle. (continued)}\\
+\toprule
+Split & Method & Success & Tracking & Safety & Asym. err.\\
+\midrule
+\endhead
+Nominal & Online ID & 0.165 $\pm$ 0.013 & 0.634 & 0.186 & 0.037\\
+Nominal & CBF-FTC MPC & 0.122 $\pm$ 0.014 & 0.682 & 0.264 & 0.040\\
+Nominal & UKF observer & 0.148 $\pm$ 0.019 & 0.642 & 0.197 & 0.033\\
+Nominal & L1 adaptive & 0.121 $\pm$ 0.011 & 0.674 & 0.242 & 0.031\\
+Nominal & Latent state v4 & 0.150 $\pm$ 0.013 & 0.642 & 0.200 & 0.030\\
+Nominal & Belief state v5 & 0.158 $\pm$ 0.013 & 0.654 & 0.217 & 0.030\\
+Nominal & Oracle state & 0.187 $\pm$ 0.018 & 0.656 & 0.238 & 0.033\\
+Gain shift & Online ID & 0.131 $\pm$ 0.012 & 0.662 & 0.223 & 0.188\\
+Gain shift & CBF-FTC MPC & 0.119 $\pm$ 0.014 & 0.708 & 0.299 & 0.222\\
+Gain shift & UKF observer & 0.122 $\pm$ 0.015 & 0.666 & 0.231 & 0.143\\
+Gain shift & L1 adaptive & 0.096 $\pm$ 0.010 & 0.699 & 0.279 & 0.132\\
+Gain shift & Latent state v4 & 0.153 $\pm$ 0.012 & 0.662 & 0.230 & 0.118\\
+Gain shift & Belief state v5 & 0.141 $\pm$ 0.013 & 0.678 & 0.253 & 0.116\\
+Gain shift & Oracle state & 0.197 $\pm$ 0.014 & 0.673 & 0.259 & 0.102\\
+Deadzone/sat. & Online ID & 0.097 $\pm$ 0.014 & 0.693 & 0.265 & 0.193\\
+Deadzone/sat. & CBF-FTC MPC & 0.058 $\pm$ 0.012 & 0.760 & 0.377 & 0.181\\
+Deadzone/sat. & UKF observer & 0.124 $\pm$ 0.011 & 0.684 & 0.262 & 0.210\\
+Deadzone/sat. & L1 adaptive & 0.090 $\pm$ 0.013 & 0.727 & 0.323 & 0.195\\
+Deadzone/sat. & Latent state v4 & 0.146 $\pm$ 0.013 & 0.670 & 0.257 & 0.191\\
+Deadzone/sat. & Belief state v5 & 0.148 $\pm$ 0.011 & 0.684 & 0.272 & 0.191\\
+Deadzone/sat. & Oracle state & 0.198 $\pm$ 0.019 & 0.664 & 0.264 & 0.195\\
+Thermal drift & Online ID & 0.117 $\pm$ 0.015 & 0.658 & 0.225 & 0.252\\
+Thermal drift & CBF-FTC MPC & 0.103 $\pm$ 0.012 & 0.708 & 0.304 & 0.284\\
+Thermal drift & UKF observer & 0.134 $\pm$ 0.019 & 0.661 & 0.233 & 0.227\\
+Thermal drift & L1 adaptive & 0.120 $\pm$ 0.012 & 0.693 & 0.278 & 0.240\\
+Thermal drift & Latent state v4 & 0.148 $\pm$ 0.012 & 0.655 & 0.229 & 0.225\\
+Thermal drift & Belief state v5 & 0.171 $\pm$ 0.010 & 0.669 & 0.254 & 0.221\\
+Thermal drift & Oracle state & 0.193 $\pm$ 0.011 & 0.668 & 0.263 & 0.193\\
+Latency/hyst. & Online ID & 0.132 $\pm$ 0.016 & 0.683 & 0.269 & 0.146\\
+Latency/hyst. & CBF-FTC MPC & 0.096 $\pm$ 0.022 & 0.734 & 0.344 & 0.158\\
+Latency/hyst. & UKF observer & 0.132 $\pm$ 0.018 & 0.688 & 0.281 & 0.138\\
+Latency/hyst. & L1 adaptive & 0.102 $\pm$ 0.014 & 0.716 & 0.317 & 0.132\\
+Latency/hyst. & Latent state v4 & 0.136 $\pm$ 0.020 & 0.678 & 0.266 & 0.128\\
+Latency/hyst. & Belief state v5 & 0.156 $\pm$ 0.018 & 0.688 & 0.286 & 0.129\\
+Latency/hyst. & Oracle state & 0.196 $\pm$ 0.017 & 0.685 & 0.293 & 0.131\\
+Fault & Online ID & 0.132 $\pm$ 0.018 & 0.675 & 0.254 & 0.198\\
+Fault & CBF-FTC MPC & 0.090 $\pm$ 0.014 & 0.730 & 0.340 & 0.208\\
+Fault & UKF observer & 0.129 $\pm$ 0.013 & 0.679 & 0.265 & 0.196\\
+Fault & L1 adaptive & 0.107 $\pm$ 0.013 & 0.708 & 0.300 & 0.187\\
+Fault & Latent state v4 & 0.134 $\pm$ 0.010 & 0.671 & 0.255 & 0.185\\
+Fault & Belief state v5 & 0.165 $\pm$ 0.017 & 0.681 & 0.274 & 0.187\\
+Fault & Oracle state & 0.194 $\pm$ 0.018 & 0.677 & 0.279 & 0.191\\
+Payload/contact & Online ID & 0.104 $\pm$ 0.016 & 0.692 & 0.277 & 0.219\\
+Payload/contact & CBF-FTC MPC & 0.096 $\pm$ 0.013 & 0.739 & 0.355 & 0.230\\
+Payload/contact & UKF observer & 0.123 $\pm$ 0.017 & 0.692 & 0.290 & 0.212\\
+Payload/contact & L1 adaptive & 0.092 $\pm$ 0.014 & 0.721 & 0.325 & 0.209\\
+Payload/contact & Latent state v4 & 0.121 $\pm$ 0.008 & 0.676 & 0.265 & 0.202\\
+Payload/contact & Belief state v5 & 0.154 $\pm$ 0.019 & 0.689 & 0.290 & 0.206\\
+Payload/contact & Oracle state & 0.192 $\pm$ 0.017 & 0.678 & 0.291 & 0.203\\
+Combined & Online ID & 0.089 $\pm$ 0.006 & 0.729 & 0.342 & 0.388\\
+Combined & CBF-FTC MPC & 0.070 $\pm$ 0.014 & 0.789 & 0.430 & 0.403\\
+Combined & UKF observer & 0.089 $\pm$ 0.014 & 0.730 & 0.348 & 0.378\\
+Combined & L1 adaptive & 0.083 $\pm$ 0.012 & 0.763 & 0.391 & 0.369\\
+Combined & Latent state v4 & 0.117 $\pm$ 0.018 & 0.714 & 0.329 & 0.342\\
+Combined & Belief state v5 & 0.119 $\pm$ 0.013 & 0.731 & 0.350 & 0.342\\
+Combined & Oracle state & 0.169 $\pm$ 0.014 & 0.716 & 0.348 & 0.337\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\begin{center}
+\scriptsize
+\begin{longtable}{p{0.28\linewidth}p{0.20\linewidth}rrrr}
+\caption{Paired seed-level hard-aggregate differences for belief state v5 minus reference. Negative tracking and safety differences are favorable; positive success and utility differences are favorable.}\label{tab:paired}\\
+\toprule
+Reference & Metric & Mean diff & CI95 & Lower95 & Upper95\\
+\midrule
+\endfirsthead
+\caption[]{Paired seed-level hard-aggregate differences for belief state v5 minus reference. Negative tracking and safety differences are favorable; positive success and utility differences are favorable. (continued)}\\
+\toprule
+Reference & Metric & Mean diff & CI95 & Lower95 & Upper95\\
+\midrule
+\endhead
+Latent state v4 & task\_success & 0.022 & 0.017 & 0.005 & 0.038\\
+Latent state v4 & tracking\_error & 0.013 & 0.006 & 0.008 & 0.019\\
+Latent state v4 & safety\_violation & 0.022 & 0.008 & 0.014 & 0.030\\
+Latent state v4 & asymmetry\_error & 0.002 & 0.001 & 0.001 & 0.004\\
+Latent state v4 & robust\_utility & 0.007 & 0.020 & -0.013 & 0.027\\
+L1 adaptive & task\_success & 0.052 & 0.009 & 0.043 & 0.060\\
+L1 adaptive & tracking\_error & -0.030 & 0.005 & -0.036 & -0.025\\
+L1 adaptive & safety\_violation & -0.034 & 0.009 & -0.043 & -0.026\\
+L1 adaptive & asymmetry\_error & -0.010 & 0.002 & -0.012 & -0.008\\
+L1 adaptive & robust\_utility & 0.076 & 0.013 & 0.062 & 0.089\\
+UKF observer & task\_success & 0.032 & 0.012 & 0.019 & 0.044\\
+UKF observer & tracking\_error & -0.000 & 0.003 & -0.004 & 0.003\\
+UKF observer & safety\_violation & 0.004 & 0.007 & -0.003 & 0.011\\
+UKF observer & asymmetry\_error & -0.017 & 0.001 & -0.018 & -0.016\\
+UKF observer & robust\_utility & 0.032 & 0.014 & 0.018 & 0.047\\
+Online ID & task\_success & 0.037 & 0.015 & 0.022 & 0.053\\
+Online ID & tracking\_error & 0.002 & 0.004 & -0.002 & 0.006\\
+Online ID & safety\_violation & 0.014 & 0.006 & 0.007 & 0.020\\
+Online ID & asymmetry\_error & -0.023 & 0.002 & -0.025 & -0.022\\
+Online ID & robust\_utility & 0.033 & 0.018 & 0.015 & 0.051\\
+CBF-FTC MPC & task\_success & 0.060 & 0.011 & 0.049 & 0.072\\
+CBF-FTC MPC & tracking\_error & -0.052 & 0.004 & -0.057 & -0.048\\
+CBF-FTC MPC & safety\_violation & -0.070 & 0.006 & -0.076 & -0.064\\
+CBF-FTC MPC & asymmetry\_error & -0.035 & 0.002 & -0.038 & -0.033\\
+CBF-FTC MPC & robust\_utility & 0.115 & 0.012 & 0.103 & 0.126\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\begin{figure}[tbp]\centering\includegraphics[width=0.96\linewidth]{asymmetry_hard_success_v5.png}\caption{Hard-aggregate success. Belief state v5 improves non-oracle success but remains far from an external deployment claim.}\label{fig:hard-success}\end{figure}
+\begin{figure}[tbp]\centering\includegraphics[width=0.92\linewidth]{asymmetry_safety_tracking_v5.png}\caption{Tracking, safety, and asymmetry error. V5 improves some baselines but loses the frozen tracking and safety gates against v4.}\label{fig:safety-tracking}\end{figure}
+\begin{figure}[tbp]\centering\includegraphics[width=0.82\linewidth]{asymmetry_pareto_v5.png}\caption{Success-safety-energy Pareto view. Marker size reflects actuator energy.}\label{fig:pareto}\end{figure}
+\section{Mechanism Ablations}
+The mechanism gate fails. The full belief-state method is better than most ablations, but the safety-clipping ablation obtains lower tracking error while having worse safety, creating a joint tradeoff that the frozen gate refuses to call a clean mechanism win. The scalar-only latent-gain ablation performs poorly, which supports the non-scalar representation claim, but that single positive mechanism result does not make the overall method impeccable.
+\begin{center}
+\scriptsize
+\begin{longtable}{p{0.14\linewidth}p{0.27\linewidth}rrrrr}
+\caption{Mechanism ablations. The full mechanism had to beat every non-full ablation on robust utility by at least 0.015 and avoid a joint success/safety ablation reversal.}\label{tab:ablation}\\
+\toprule
+Split & Ablation & Success & Tracking & Safety & Asym. err. & Utility\\
+\midrule
+\endfirsthead
+\caption[]{Mechanism ablations. The full mechanism had to beat every non-full ablation on robust utility by at least 0.015 and avoid a joint success/safety ablation reversal. (continued)}\\
+\toprule
+Split & Ablation & Success & Tracking & Safety & Asym. err. & Utility\\
+\midrule
+\endhead
+Payload/contact & Full belief v5 & 0.149 & 0.691 & 0.292 & 0.205 & -0.438\\
+Payload/contact & - persistent memory & 0.119 & 0.694 & 0.293 & 0.185 & -0.476\\
+Payload/contact & - sign-specific asym. & 0.103 & 0.705 & 0.305 & 0.204 & -0.493\\
+Payload/contact & - deadzone/sat. state & 0.115 & 0.712 & 0.311 & 0.204 & -0.486\\
+Payload/contact & - latency comp. & 0.125 & 0.693 & 0.295 & 0.205 & -0.464\\
+Payload/contact & - drift update & 0.120 & 0.692 & 0.293 & 0.198 & -0.468\\
+Payload/contact & - residual update & 0.105 & 0.698 & 0.299 & 0.188 & -0.496\\
+Payload/contact & - safety clipping & 0.160 & 0.650 & 0.256 & 0.196 & -0.401\\
+Payload/contact & Scalar-only latent gain & 0.099 & 0.715 & 0.314 & 0.218 & -0.504\\
+Payload/contact & No belief uncertainty & 0.134 & 0.691 & 0.295 & 0.204 & -0.456\\
+Combined & Full belief v5 & 0.117 & 0.729 & 0.347 & 0.343 & -0.552\\
+Combined & - persistent memory & 0.086 & 0.745 & 0.369 & 0.289 & -0.608\\
+Combined & - sign-specific asym. & 0.086 & 0.752 & 0.376 & 0.361 & -0.605\\
+Combined & - deadzone/sat. state & 0.082 & 0.752 & 0.370 & 0.358 & -0.604\\
+Combined & - latency comp. & 0.098 & 0.738 & 0.355 & 0.354 & -0.580\\
+Combined & - drift update & 0.108 & 0.727 & 0.352 & 0.337 & -0.563\\
+Combined & - residual update & 0.082 & 0.739 & 0.360 & 0.292 & -0.606\\
+Combined & - safety clipping & 0.105 & 0.681 & 0.433 & 0.341 & -0.612\\
+Combined & Scalar-only latent gain & 0.080 & 0.755 & 0.377 & 0.389 & -0.612\\
+Combined & No belief uncertainty & 0.110 & 0.729 & 0.356 & 0.345 & -0.565\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\begin{figure}[tbp]\centering\includegraphics[width=0.96\linewidth]{asymmetry_ablation_v5.png}\caption{Ablation robust utility. The full mechanism does not achieve the predeclared clean necessity margin.}\label{fig:ablation}\end{figure}
 \section{Stress Tests}
-Stress sweeps vary gain asymmetry, deadzone/saturation, latency, thermal drift, and combined stress from 0.0 to 1.0. At maximum combined stress, the proposed controller reaches 0.091 task success. Domain randomization reaches 0.038, online system ID reaches 0.050, adaptive MPC reaches 0.050, and robust tube MPC reaches 0.054. The latent-state controller also reduces safety violation to 0.329 versus 0.363 for online ID and 0.423 for robust tube MPC at this stress point. This is encouraging, but it remains a deterministic local benchmark.
-
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=0.88\linewidth]{asymmetry_stress_sweep.png}
-\caption{Combined stress sweep. The proposed controller retains the strongest non-oracle success at high stress, but the evidence is not external validation.}
-\label{fig:stress}
-\end{figure}
-
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=0.84\linewidth]{asymmetry_failures.png}
-\caption{Safety violation and asymmetry-estimation error on combined hard shift. The method improves estimation error, but safety is not a decisive win.}
-\label{fig:failures}
-\end{figure}
-
-\section{Why This Is Not Submission-Ready}
-The project fails the ICLR-main readiness gate for three reasons.
-\begin{itemize}
-\item \textbf{Evidence ceiling.} The benchmark is deterministic and reproducible, but local and synthetic. There is no robot hardware, accepted simulator benchmark, or public robot dataset evaluation.
-\item \textbf{Safety is not dominant.} The proposed method improves success and tracking, but online system ID has slightly lower hard-split safety violation.
-\item \textbf{Absolute performance is low.} Hard-shift success remains 0.151, far below what a mature robotics submission would need without additional validation and analysis.
-\end{itemize}
-
+The stress gate is the one gate v5 survives. At maximum combined stress, no non-oracle method Pareto-dominates v5 across success, tracking, safety, asymmetry error, and utility. However, a stress-gate pass cannot rescue failed main, mechanism, fixed-risk, and scope gates.
+\begin{center}
+\scriptsize
+\begin{longtable}{rp{0.27\linewidth}rrrrr}
+\caption{Combined stress sweep. V5 was not Pareto-dominated at maximum stress, but that stress-gate pass did not rescue the failed main, mechanism, fixed-risk, and scope gates.}\label{tab:stress}\\
+\toprule
+Level & Method & Success & Tracking & Safety & Asym. err. & Utility\\
+\midrule
+\endfirsthead
+\caption[]{Combined stress sweep. V5 was not Pareto-dominated at maximum stress, but that stress-gate pass did not rescue the failed main, mechanism, fixed-risk, and scope gates. (continued)}\\
+\toprule
+Level & Method & Success & Tracking & Safety & Asym. err. & Utility\\
+\midrule
+\endhead
+0.0 & Domain rand. & 0.148 & 0.643 & 0.199 & 0.076 & -0.330\\
+0.0 & Online ID & 0.159 & 0.640 & 0.194 & 0.031 & -0.306\\
+0.0 & CBF-FTC MPC & 0.137 & 0.689 & 0.274 & 0.031 & -0.385\\
+0.0 & UKF observer & 0.137 & 0.647 & 0.209 & 0.031 & -0.338\\
+0.0 & L1 adaptive & 0.127 & 0.674 & 0.246 & 0.029 & -0.374\\
+0.0 & Belief state v5 & 0.178 & 0.656 & 0.223 & 0.029 & -0.307\\
+0.0 & Oracle state & 0.212 & 0.660 & 0.246 & 0.034 & -0.287\\
+0.2 & Domain rand. & 0.098 & 0.680 & 0.239 & 0.263 & -0.465\\
+0.2 & Online ID & 0.115 & 0.660 & 0.220 & 0.140 & -0.402\\
+0.2 & CBF-FTC MPC & 0.116 & 0.710 & 0.307 & 0.145 & -0.462\\
+0.2 & UKF observer & 0.130 & 0.666 & 0.232 & 0.141 & -0.396\\
+0.2 & L1 adaptive & 0.111 & 0.698 & 0.272 & 0.136 & -0.443\\
+0.2 & Belief state v5 & 0.173 & 0.667 & 0.248 & 0.139 & -0.362\\
+0.2 & Oracle state & 0.191 & 0.659 & 0.250 & 0.152 & -0.346\\
+0.4 & Domain rand. & 0.067 & 0.727 & 0.323 & 0.455 & -0.609\\
+0.4 & Online ID & 0.102 & 0.705 & 0.293 & 0.264 & -0.507\\
+0.4 & CBF-FTC MPC & 0.084 & 0.763 & 0.393 & 0.272 & -0.595\\
+0.4 & UKF observer & 0.121 & 0.704 & 0.304 & 0.264 & -0.495\\
+0.4 & L1 adaptive & 0.094 & 0.737 & 0.344 & 0.254 & -0.546\\
+0.4 & Belief state v5 & 0.152 & 0.703 & 0.309 & 0.246 & -0.464\\
+0.4 & Oracle state & 0.190 & 0.690 & 0.309 & 0.245 & -0.423\\
+0.6 & Domain rand. & 0.062 & 0.759 & 0.382 & 0.654 & -0.700\\
+0.6 & Online ID & 0.074 & 0.738 & 0.352 & 0.399 & -0.614\\
+0.6 & CBF-FTC MPC & 0.077 & 0.793 & 0.422 & 0.407 & -0.659\\
+0.6 & UKF observer & 0.102 & 0.731 & 0.348 & 0.391 & -0.579\\
+0.6 & L1 adaptive & 0.086 & 0.770 & 0.399 & 0.381 & -0.627\\
+0.6 & Belief state v5 & 0.131 & 0.730 & 0.351 & 0.354 & -0.546\\
+0.6 & Oracle state & 0.158 & 0.723 & 0.350 & 0.345 & -0.518\\
+0.8 & Domain rand. & 0.043 & 0.820 & 0.465 & 0.837 & -0.830\\
+0.8 & Online ID & 0.065 & 0.793 & 0.429 & 0.526 & -0.718\\
+0.8 & CBF-FTC MPC & 0.057 & 0.845 & 0.492 & 0.537 & -0.766\\
+0.8 & UKF observer & 0.076 & 0.782 & 0.419 & 0.513 & -0.693\\
+0.8 & L1 adaptive & 0.062 & 0.831 & 0.473 & 0.505 & -0.743\\
+0.8 & Belief state v5 & 0.093 & 0.782 & 0.419 & 0.460 & -0.667\\
+0.8 & Oracle state & 0.124 & 0.771 & 0.415 & 0.451 & -0.632\\
+1.0 & Domain rand. & 0.040 & 0.854 & 0.495 & 1.013 & -0.896\\
+1.0 & Online ID & 0.047 & 0.854 & 0.499 & 0.647 & -0.825\\
+1.0 & CBF-FTC MPC & 0.045 & 0.885 & 0.526 & 0.656 & -0.835\\
+1.0 & UKF observer & 0.054 & 0.836 & 0.477 & 0.623 & -0.792\\
+1.0 & L1 adaptive & 0.053 & 0.877 & 0.525 & 0.615 & -0.821\\
+1.0 & Belief state v5 & 0.068 & 0.833 & 0.481 & 0.560 & -0.768\\
+1.0 & Oracle state & 0.099 & 0.817 & 0.466 & 0.552 & -0.725\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\begin{figure}[tbp]\centering\includegraphics[width=0.90\linewidth]{asymmetry_stress_sweep_v5.png}\caption{Combined stress sweep. V5 is not dominated at maximum stress, but the absolute success rate remains low.}\label{fig:stress}\end{figure}
+\section{Fixed-Risk Deployment}
+The fixed-risk protocol is intentionally harsh because deployment claims should be harsh. A method must decide when it is safe enough to accept autonomous execution under budgets 0.02, 0.05, 0.08, and 0.10. At budget 0.05, every method has zero accepted coverage on both fixed-risk splits. This means the calibrated risk scores do not support a nontrivial deployment claim.
+\begin{center}
+\scriptsize
+\begin{longtable}{p{0.16\linewidth}rp{0.28\linewidth}rrrr}
+\caption{Fixed-risk deployment tests. At budget 0.05 all methods have zero accepted coverage on both fixed-risk splits, so the frozen deployment gate fails.}\label{tab:fixed}\\
+\toprule
+Split & Budget & Method & Coverage & Succ. & Tracking & Safety\\
+\midrule
+\endfirsthead
+\caption[]{Fixed-risk deployment tests. At budget 0.05 all methods have zero accepted coverage on both fixed-risk splits, so the frozen deployment gate fails. (continued)}\\
+\toprule
+Split & Budget & Method & Coverage & Succ. & Tracking & Safety\\
+\midrule
+\endhead
+Combined & 0.02 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Online ID & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Online ID & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Online ID & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Online ID & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Online ID & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Online ID & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\begin{figure}[tbp]\centering\includegraphics[width=0.90\linewidth]{asymmetry_fixed_risk_v5.png}\caption{Fixed-risk coverage on combined hard shift. Strict budget 0.05 gives zero coverage.}\label{fig:fixed}\end{figure}
+\section{Negative Cases}
+Negative cases are retained because they prevent a visually polished but brittle paper. They cover complete actuator failure, sensor bias that mimics asymmetry, contact slip, rapidly switching faults, payloads outside the modeled family, and latency instability. These cases explain why a latent actuator state is not automatically a robust robot controller.
+\begin{center}
+\scriptsize
+\begin{longtable}{p{0.26\linewidth}p{0.25\linewidth}p{0.38\linewidth}}
+\caption{Retained negative cases used to keep the discussion honest.}\label{tab:negative}\\
+\toprule
+Case & Family & Terminal lesson\\
+\midrule
+\endfirsthead
+\caption[]{Retained negative cases used to keep the discussion honest. (continued)}\\
+\toprule
+Case & Family & Terminal lesson\\
+\midrule
+\endhead
+complete\_actuator\_failure\_0 & complete\_actuator\_failure & fault diagnosis is separate from adaptation\\
+complete\_actuator\_failure\_1 & complete\_actuator\_failure & fault diagnosis is separate from adaptation\\
+complete\_actuator\_failure\_2 & complete\_actuator\_failure & fault diagnosis is separate from adaptation\\
+complete\_actuator\_failure\_3 & complete\_actuator\_failure & fault diagnosis is separate from adaptation\\
+sensor\_bias\_mimics\_asymmetry\_0 & sensor\_bias\_mimics\_asymmetry & needs joint sensing-actuation observer\\
+sensor\_bias\_mimics\_asymmetry\_1 & sensor\_bias\_mimics\_asymmetry & needs joint sensing-actuation observer\\
+sensor\_bias\_mimics\_asymmetry\_2 & sensor\_bias\_mimics\_asymmetry & needs joint sensing-actuation observer\\
+sensor\_bias\_mimics\_asymmetry\_3 & sensor\_bias\_mimics\_asymmetry & needs joint sensing-actuation observer\\
+contact\_slip\_dominates\_0 & contact\_slip\_dominates & contact mode must be represented\\
+contact\_slip\_dominates\_1 & contact\_slip\_dominates & contact mode must be represented\\
+contact\_slip\_dominates\_2 & contact\_slip\_dominates & contact mode must be represented\\
+contact\_slip\_dominates\_3 & contact\_slip\_dominates & contact mode must be represented\\
+rapidly\_switching\_fault\_0 & rapidly\_switching\_fault & persistence must be gated by change detection\\
+rapidly\_switching\_fault\_1 & rapidly\_switching\_fault & persistence must be gated by change detection\\
+rapidly\_switching\_fault\_2 & rapidly\_switching\_fault & persistence must be gated by change detection\\
+rapidly\_switching\_fault\_3 & rapidly\_switching\_fault & persistence must be gated by change detection\\
+payload\_outside\_family\_0 & payload\_outside\_family & state family is incomplete\\
+payload\_outside\_family\_1 & payload\_outside\_family & state family is incomplete\\
+payload\_outside\_family\_2 & payload\_outside\_family & state family is incomplete\\
+payload\_outside\_family\_3 & payload\_outside\_family & state family is incomplete\\
+latency\_instability\_0 & latency\_instability & delay is a first-class state\\
+latency\_instability\_1 & latency\_instability & delay is a first-class state\\
+latency\_instability\_2 & latency\_instability & delay is a first-class state\\
+latency\_instability\_3 & latency\_instability & delay is a first-class state\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\section{Prior-Work Boundary}
+The local literature pool is used as a hostile-review pressure map. The paper sits near observer-based robust control, flexible-joint manipulation, locomotion asymmetry, adaptive control, residual learning, sim-to-real adaptation, and fault-tolerant MPC \citep{pool86_07,pool86_08,pool86_09,pool86_10,pool86_11,pool86_12,pool86_13}. Because this rebuild has no real robot benchmark, it cannot claim to beat those bodies of work directly.
+\begin{center}
+\scriptsize
+\begin{longtable}{p{0.12\linewidth}p{0.53\linewidth}p{0.08\linewidth}p{0.18\linewidth}}
+\caption{Local prior-work pressure map. The entries are used as threat coverage, not as an exhaustive manual survey.}\label{tab:prior}\\
+\toprule
+Cite & Prior-work pressure & Year & Source\\
+\midrule
+\endfirsthead
+\caption[]{Local prior-work pressure map. The entries are used as threat coverage, not as an exhaustive manual survey. (continued)}\\
+\toprule
+Cite & Prior-work pressure & Year & Source\\
+\midrule
+\endhead
+\citep{pool86_01} & Did We Get Sensorimotor Adaptation Wrong? Implicit Adaptation as Direct Policy Updating Rather than Forward-Model-Base & 2021 & The Journal of Neuroscience\\
+\citep{pool86_02} & Observer-based robust control for flexible-joint robot manipulators: A state-dependent Riccati equation-based approach & 2020 & Transactions of the Institute of Measurement and Control\\
+\citep{pool86_03} & Asymmetry in Skipping Enhances Viability Against Control Input Noise & 2026 & Advanced Robotics Research\\
+\citep{pool86_04} & Tracking Control and Experiment for Propeller-Driven Wall-Climbing Robot Considering Actuator Dynamics and Saturation & 2025 & Journal of Field Robotics\\
+\citep{pool86_05} & Adaptive Neural Network Control for Full-State Constrained Robotic Manipulator With Actuator Saturation and Time-Varyi & 2021 & IEEE Transactions on Neural Networks and Learning Systems\\
+\citep{pool86_06} & Did we get sensorimotor adaptation wrong? Implicit adaptation as direct policy updating rather than forward-model-base &  & crossref\\
+\citep{pool86_07} & Rollover Prevention for Mobile Robots With Control Barrier Functions: Differentiator-Based Adaptation and Projection-t & 2024 & IEEE Control Systems Letters\\
+\citep{pool86_08} & Joint Torque Control of a Collaborative Robot Based on Active Disturbance Rejection With the Consideration of Actuator & 2017 & Volume 4A: Dynamics, Vibration, and Control\\
+\citep{pool86_09} & Maximum principle for stochastic optimal control problem of finite state forward-backward stochastic difference system & 2022 & Optimal Control Applications and Methods\\
+\citep{pool86_10} & Cascaded Extended-State-Observer-Based Synergetic Control for Quadcopter Translational Dynamics & 2025 & Journal of Field Robotics\\
+\citep{pool86_11} & State-Dependent Model Predictive Control for Nonlinear Vehicle Dynamics with Implicit State-Derivative Coupling and Ac &  & crossref\\
+\citep{pool86_12} & Learning-In-The-Loop Optimization: End-To-End Control And Co-Design Of Soft Robots Through Learned Deep Latent Represe & 2019 & DSpace@MIT (Massachusetts Institute of Technology)\\
+\citep{pool86_13} & 3D gaze cursor: Continuous calibration and end-point grasp control of robotic actuators & 2016 & openalex\\
+\citep{pool86_14} & Input-to-State Stable Coupled Oscillator Networks for Closed-form Model-based Control in Latent Space & 2024 & Advances in Neural Information Processing Systems 37\\
+\citep{pool86_15} & Constrained model predictive control of jump linear systems with noise and non-observed Markov state & 2006 & 2006 American Control Conference\\
+\citep{pool86_16} & Safe Navigation Under State Uncertainty: Online Adaptation for Robust Control Barrier Functions & 2026 & IEEE Robotics and Automation Letters\\
+\citep{pool86_17} & Model-Free Sliding Mode Control for a Nonlinear Teleoperation System with Actuator Dynamics & 2023 & Journal of Automation, Mobile Robotics and Intelligent Sys\\
+\citep{pool86_18} & A Control Approach for Actuated Dynamic Walking in Biped Robots & 2009 & IEEE Transactions on Robotics\\
+\citep{pool86_19} & Managing impressions online: Microblogs and the state media's adaptation of online logics in China & 2017 & Journalism\\
+\citep{pool86_20} & From Noise to Control: Parameterized Diffusion Policies & 2026 & arXiv\\
+\citep{pool86_21} & On the optimal control of robotic manipulators with actuator and end-effector constraints & 2005 & openalex\\
+\citep{pool86_22} & Multi-model predictive control based on LMI: from the adaptation of the state-space model to the analytic description  & 2010 & International Journal of Control\\
+\citep{pool86_23} & Broadcast Feedback of Stochastic Cellular Actuators Inspired by Biological Muscle Control & 2007 & The International Journal of Robotics Research\\
+\citep{pool86_24} & Experimental Verification of Model-Free Vibration Control Technique Based on a Virtual Controlled Object Considering A & 2021 & Volume 7A: Dynamics, Vibration, and Control\\
+\citep{pool86_25} & Nonlinear Model Predictive Control with Enhanced Actuator Model for Multi-Rotor Aerial Vehicles with Generic Designs & 2020 & Journal of Intelligent \& Robotic Systems\\
+\citep{pool86_26} & Generative AI Against Poaching: Latent Composite Flow Matching for Poaching Prediction & 2026 & Proceedings of the AAAI Conference on Artificial Intellige\\
+\citep{pool86_27} & Comparative Analysis of Intelligent PID Tuning Methods for Position Tracking in Mismatched Electro-Hydraulic Actuator & 2026 & International Journal of Robotics and Control Systems\\
+\citep{pool86_28} & Neuromorphic Quantum Mechatronics for Soft Robotics, Assistive Gerontechnology, and Human-Machine Cognitive Adaptation & 2026 & International Journal of Academic and Industrial Research \\
+\citep{pool86_29} & Supplemental Material for Latent State-Trait and Latent Growth Curve Modeling of Inhibitory Control & 2023 & Journal of Experimental Psychology: General\\
+\citep{pool86_30} & Adaptive State Tracking Control with Actuator Nonlinearities and Failures & 2020 & International Conference of Control, Dynamic Systems, and \\
+\citep{pool86_31} & Slat Noise Feedback Control with a Dielectric Barrier Discharge Plasma Actuator & 2012 & 6th AIAA Flow Control Conference\\
+\citep{pool86_32} & Cascaded-Extended-State-Observer-Based Sliding-Mode Control for Underactuated Flexible Joint Robot & 2019 & IEEE Transactions on Industrial Electronics\\
+\citep{pool86_33} & Design and Dynamic Locomotion Control of Quadruped Robot with Perception-Less Terrain Adaptation & 2022 & Cyborg and Bionic Systems\\
+\citep{pool86_34} & Modeling and Hybrid PSO-WOA-Based Intelligent PID and State-Feedback Control for Ball and Beam Systems & 2023 & IEEE Access\\
+\citep{pool86_35} & Noise-Shaping Gradient Descent-Based Online Adaptation Algorithms for Digital Calibration of Analog Circuits & 2013 & IEEE Transactions on Neural Networks and Learning Systems\\
+\citep{pool86_36} & Improved Third Order PID Sliding Mode Controller for Electrohydraulic Actuator Tracking Control & 2022 & Journal of Robotics and Control (JRC)\\
+\citep{pool86_37} & Random Feedback Control, Group Invariants and Pattern Classification, Quantum Mechanics in Levy Noise, State Observer  & 2022 & Electromagnetics, Control and Robotics\\
+\citep{pool86_38} & Adaptive Oscillator-Based Assistive Torque Control for Gait Asymmetry Correction With a nSEA-Driven Hip Exoskeleton & 2022 & IEEE Transactions on Neural Systems and Rehabilitation Eng\\
+\citep{pool86_39} & Active Fault-Tolerant Control Design for Actuator Fault Mitigation in Robotic Manipulators & 2021 & IEEE Access\\
+\citep{pool86_40} & Adaptive neural tracking control for flexible joint robot including hydraulic actuator dynamics with disturbance obser & 2024 & International Journal of Robust and Nonlinear Control\\
+\citep{pool86_41} & Economic Model Predictive Control: Handling Valve Actuator Dynamics and Process Equipment Considerations & 2018 & Foundations and Trends in Systems and Control\\
+\citep{pool86_42} & Efficient transfer learning and online adaptation with latent variable models for continuous control & 2018 & arXiv\\
+\citep{pool86_43} & Robot Manipulators Control with Parameters Adaptation and State Estimation & 2018 & 2018 3rd International Conference on Advanced Robotics and\\
+\citep{pool86_44} & On Initialization of Adaptation in Active Noise Control & 2018 & 2018 23rd International Conference on Methods \& Models in\\
+\citep{pool86_45} & Asymmetric Bounded Neural Control for an Uncertain Robot by State Feedback and Output Feedback & 2019 & IEEE Transactions on Systems Man and Cybernetics Systems\\
+\citep{pool86_46} & Neural-Network-Based Terminal Sliding-Mode Control of Robotic Manipulators Including Actuator Dynamics & 2009 & IEEE Transactions on Industrial Electronics\\
+\citep{pool86_47} & Design and Experiments of Electro-Hydrostatic Actuator for Wheel-Legged Robot with Fast Force Control Response & 2023 & Machines\\
+\citep{pool86_48} & Adaptive latent state modeling of brain network dynamics with real-time learning rate optimization & 2021 & Journal of Neural Engineering\\
+\citep{pool86_49} & Safe Supervisory Control of Soft Robot Actuators & 2024 & Soft Robotics\\
+\citep{pool86_50} & Speed adaptation control of a small-sized treadmill with state feedback controller & 2010 & 2010 3rd IEEE RAS \& EMBS International Conference on Biom\\
+\citep{pool86_51} & Adaptation in active noise control - A simulation case study & 2016 & 2016 21st International Conference on Methods and Models i\\
+\citep{pool86_52} & Event-triggered model predictive control of positive systems with random actuator saturation &  & crossref\\
+\citep{pool86_53} & A novel proportional-integral-derivative -type iterative learning control strategy based on 2D model predictive iterat & 2026 & The Canadian Journal of Chemical Engineering\\
+\citep{pool86_54} & Fault-Tolerant Model Predictive Control of a Fixed-Wing UAV with Actuator Fault Estimation & 2021 & Guidance, Navigation and Control\\
+\citep{pool86_55} & An Analysis of Policies from Stochastic Linear Quadratic Gaussian in Robotics Problems with State- and Control-Depende & 2018 & Journal of Intelligent \& Robotic Systems\\
+\citep{pool86_56} & Circular active noise barrier using theoretical control filter considering interaction between speaker and barrier & 2023 & Scientific Reports\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
 \section{Reproducibility}
-Run the benchmark from the repository root:
-\begin{verbatim}
-python src\run_experiment.py
-\end{verbatim}
-The script writes rollout CSVs, seed-level metrics, pairwise statistics, ablations, stress sweeps, negative cases, summary text, and the figures used in this manuscript. The 2026-06-15 audit verified 40,320 main rollout rows, 7,056 ablation rollout rows, 100,800 stress rollout rows, and seven seeds. The canonical local PDF is \texttt{C:/Users/wangz/Downloads/86.pdf}.
-
+All tables and figures are regenerated by running \texttt{python src\textbackslash run\_experiment.py} from the repository root. The script streams raw CSVs and aggregates seed-level statistics. The canonical local PDF is \texttt{C:/Users/wangz/Downloads/86.pdf}; no Desktop copy is part of the artifact contract.
+\begin{center}
+\scriptsize
+\begin{longtable}{p{0.55\linewidth}r}
+\caption{Validated row counts for the v5 evidence package.}\label{tab:counts}\\
+\toprule
+Artifact & Rows\\
+\midrule
+\endfirsthead
+\caption[]{Validated row counts for the v5 evidence package. (continued)}\\
+\toprule
+Artifact & Rows\\
+\midrule
+\endhead
+rollouts.csv & 199680\\
+dataset\_summary.csv & 15360\\
+raw\_seed\_metrics.csv & 1040\\
+metrics.csv & 1352\\
+pairwise\_stats.csv & 768\\
+hard\_aggregate\_seed\_metrics.csv & 130\\
+hard\_aggregate\_metrics.csv & 169\\
+hard\_aggregate\_pairwise\_stats.csv & 96\\
+ablation\_rollouts.csv & 33600\\
+ablation\_seed\_metrics.csv & 200\\
+ablation\_metrics.csv & 20\\
+stress\_sweep\_raw.csv & 302400\\
+stress\_sweep\_seed\_metrics.csv & 2520\\
+stress\_sweep.csv & 252\\
+fixed\_risk\_raw.csv & 69120\\
+fixed\_risk\_seed\_metrics.csv & 480\\
+fixed\_risk\_metrics.csv & 48\\
+fixed\_risk\_pairwise.csv & 200\\
+negative\_cases.csv & 24\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\section{Discussion}
+The result is not pretty, but it is useful. The belief-state policy improves hard-aggregate success, and the stress sweep suggests the representation is not pointless. But v5 increases tracking error and safety violation relative to v4, and the fixed-risk gate exposes that its risk score cannot certify useful deployment at a strict budget.
+The fastest path to revival is not another synthetic table. The paper would need hardware evidence or an accepted high-fidelity simulator benchmark, learned policies rather than deterministic proxy components, and direct comparisons against modern fault observers, adaptive MPC, safe RL, and robust residual-control baselines. It would also need a risk calibration procedure that retains nonzero coverage under a meaningful safety budget.
 \section{Conclusion}
-Actuator asymmetry as latent policy state remains a worthwhile research direction. The v4 evidence shows a real local signal: explicit asymmetry state beats scalar calibration, online ID, adaptive MPC, and robust tube MPC on hard-shift success and tracking. But local simulation evidence with incomplete safety dominance is not an ICLR-main submission. The honest terminal action is \textbf{KILL/ARCHIVE}.
-
+Actuator asymmetry as policy state remains a compelling research direction. This expanded audit makes the paper more honest and much more rigorous, but it does not make it submission-ready. The correct terminal action is \textbf{KILL/ARCHIVE} until external robot or high-fidelity evidence and a mechanism that beats strong baselines are available.
+\clearpage
+\appendix
+\section{Appendix: Full Main Evidence}
+This appendix reports every split-method aggregate from the frozen main protocol. The purpose is to make the negative decision auditable: the hard aggregate is not hiding a strong positive result on another predefined split.
+\begin{center}
+\tiny
+\begin{longtable}{p{0.13\linewidth}p{0.24\linewidth}rrrrrr}
+\caption{Full split-by-method main metrics. This appendix table prevents cherry-picking by exposing every predefined split and method.}\label{tab:full-main}\\
+\toprule
+Split & Method & Success & Track. & Safety & Asym. & Energy & Utility\\
+\midrule
+\endfirsthead
+\caption[]{Full split-by-method main metrics. This appendix table prevents cherry-picking by exposing every predefined split and method. (continued)}\\
+\toprule
+Split & Method & Success & Track. & Safety & Asym. & Energy & Utility\\
+\midrule
+\endhead
+Nominal & Nominal & 0.169 $\pm$ 0.015 & 0.625 & 0.172 & 0.131 & 0.766 & -0.299\\
+Nominal & Domain rand. & 0.144 $\pm$ 0.015 & 0.641 & 0.191 & 0.120 & 0.731 & -0.336\\
+Nominal & Scalar cal. & 0.154 $\pm$ 0.016 & 0.633 & 0.180 & 0.051 & 0.749 & -0.307\\
+Nominal & Online ID & 0.165 $\pm$ 0.013 & 0.634 & 0.186 & 0.037 & 0.754 & -0.295\\
+Nominal & Adaptive MPC & 0.133 $\pm$ 0.015 & 0.650 & 0.205 & 0.033 & 0.728 & -0.341\\
+Nominal & Robust tube & 0.122 $\pm$ 0.015 & 0.667 & 0.229 & 0.065 & 0.675 & -0.375\\
+Nominal & CBF-FTC MPC & 0.122 $\pm$ 0.014 & 0.682 & 0.264 & 0.040 & 0.643 & -0.393\\
+Nominal & UKF observer & 0.148 $\pm$ 0.019 & 0.642 & 0.197 & 0.033 & 0.744 & -0.319\\
+Nominal & RNN state proxy & 0.145 $\pm$ 0.014 & 0.639 & 0.195 & 0.033 & 0.755 & -0.321\\
+Nominal & L1 adaptive & 0.121 $\pm$ 0.011 & 0.674 & 0.242 & 0.031 & 0.672 & -0.379\\
+Nominal & Latent state v4 & 0.150 $\pm$ 0.013 & 0.642 & 0.200 & 0.030 & 0.758 & -0.320\\
+Nominal & Belief state v5 & 0.158 $\pm$ 0.013 & 0.654 & 0.217 & 0.030 & 0.733 & -0.324\\
+Nominal & Oracle state & 0.187 $\pm$ 0.018 & 0.656 & 0.238 & 0.033 & 0.734 & -0.308\\
+Gain shift & Nominal & 0.118 $\pm$ 0.011 & 0.660 & 0.220 & 0.739 & 0.786 & -0.506\\
+Gain shift & Domain rand. & 0.120 $\pm$ 0.013 & 0.672 & 0.240 & 0.679 & 0.744 & -0.504\\
+Gain shift & Scalar cal. & 0.119 $\pm$ 0.010 & 0.661 & 0.214 & 0.295 & 0.810 & -0.420\\
+Gain shift & Online ID & 0.131 $\pm$ 0.012 & 0.662 & 0.223 & 0.188 & 0.850 & -0.394\\
+Gain shift & Adaptive MPC & 0.125 $\pm$ 0.012 & 0.672 & 0.234 & 0.170 & 0.814 & -0.405\\
+Gain shift & Robust tube & 0.102 $\pm$ 0.011 & 0.694 & 0.267 & 0.378 & 0.704 & -0.485\\
+Gain shift & CBF-FTC MPC & 0.119 $\pm$ 0.014 & 0.708 & 0.299 & 0.222 & 0.690 & -0.461\\
+Gain shift & UKF observer & 0.122 $\pm$ 0.015 & 0.666 & 0.231 & 0.143 & 0.842 & -0.399\\
+Gain shift & RNN state proxy & 0.139 $\pm$ 0.009 & 0.661 & 0.229 & 0.148 & 0.854 & -0.382\\
+Gain shift & L1 adaptive & 0.096 $\pm$ 0.010 & 0.699 & 0.279 & 0.132 & 0.749 & -0.458\\
+Gain shift & Latent state v4 & 0.153 $\pm$ 0.012 & 0.662 & 0.230 & 0.118 & 0.858 & -0.364\\
+Gain shift & Belief state v5 & 0.141 $\pm$ 0.013 & 0.678 & 0.253 & 0.116 & 0.826 & -0.393\\
+Gain shift & Oracle state & 0.197 $\pm$ 0.014 & 0.673 & 0.259 & 0.102 & 0.855 & -0.336\\
+Deadzone/sat. & Nominal & 0.046 $\pm$ 0.010 & 0.721 & 0.295 & 0.292 & 0.879 & -0.603\\
+Deadzone/sat. & Domain rand. & 0.049 $\pm$ 0.008 & 0.740 & 0.326 & 0.268 & 0.832 & -0.619\\
+Deadzone/sat. & Scalar cal. & 0.049 $\pm$ 0.010 & 0.726 & 0.308 & 0.144 & 0.912 & -0.577\\
+Deadzone/sat. & Online ID & 0.097 $\pm$ 0.014 & 0.693 & 0.265 & 0.193 & 1.068 & -0.490\\
+Deadzone/sat. & Adaptive MPC & 0.080 $\pm$ 0.014 & 0.711 & 0.294 & 0.177 & 1.031 & -0.527\\
+Deadzone/sat. & Robust tube & 0.057 $\pm$ 0.015 & 0.756 & 0.357 & 0.186 & 0.831 & -0.605\\
+Deadzone/sat. & CBF-FTC MPC & 0.058 $\pm$ 0.012 & 0.760 & 0.377 & 0.181 & 0.871 & -0.605\\
+Deadzone/sat. & UKF observer & 0.124 $\pm$ 0.011 & 0.684 & 0.262 & 0.210 & 1.133 & -0.461\\
+Deadzone/sat. & RNN state proxy & 0.121 $\pm$ 0.015 & 0.681 & 0.259 & 0.205 & 1.142 & -0.462\\
+Deadzone/sat. & L1 adaptive & 0.090 $\pm$ 0.013 & 0.727 & 0.323 & 0.195 & 0.995 & -0.535\\
+Deadzone/sat. & Latent state v4 & 0.146 $\pm$ 0.013 & 0.670 & 0.257 & 0.191 & 1.198 & -0.433\\
+Deadzone/sat. & Belief state v5 & 0.148 $\pm$ 0.011 & 0.684 & 0.272 & 0.191 & 1.161 & -0.440\\
+Deadzone/sat. & Oracle state & 0.198 $\pm$ 0.019 & 0.664 & 0.264 & 0.195 & 1.261 & -0.383\\
+Thermal drift & Nominal & 0.138 $\pm$ 0.012 & 0.648 & 0.209 & 0.427 & 0.795 & -0.422\\
+Thermal drift & Domain rand. & 0.116 $\pm$ 0.010 & 0.665 & 0.230 & 0.417 & 0.757 & -0.458\\
+Thermal drift & Scalar cal. & 0.135 $\pm$ 0.011 & 0.657 & 0.219 & 0.343 & 0.791 & -0.417\\
+Thermal drift & Online ID & 0.117 $\pm$ 0.015 & 0.658 & 0.225 & 0.252 & 0.819 & -0.420\\
+Thermal drift & Adaptive MPC & 0.124 $\pm$ 0.010 & 0.667 & 0.241 & 0.264 & 0.787 & -0.425\\
+Thermal drift & Robust tube & 0.117 $\pm$ 0.012 & 0.690 & 0.271 & 0.340 & 0.706 & -0.470\\
+Thermal drift & CBF-FTC MPC & 0.103 $\pm$ 0.012 & 0.708 & 0.304 & 0.284 & 0.683 & -0.494\\
+Thermal drift & UKF observer & 0.134 $\pm$ 0.019 & 0.661 & 0.233 & 0.227 & 0.828 & -0.403\\
+Thermal drift & RNN state proxy & 0.158 $\pm$ 0.020 & 0.657 & 0.227 & 0.235 & 0.833 & -0.375\\
+Thermal drift & L1 adaptive & 0.120 $\pm$ 0.012 & 0.693 & 0.278 & 0.240 & 0.733 & -0.450\\
+Thermal drift & Latent state v4 & 0.148 $\pm$ 0.012 & 0.655 & 0.229 & 0.225 & 0.850 & -0.386\\
+Thermal drift & Belief state v5 & 0.171 $\pm$ 0.010 & 0.669 & 0.254 & 0.221 & 0.823 & -0.379\\
+Thermal drift & Oracle state & 0.193 $\pm$ 0.011 & 0.668 & 0.263 & 0.193 & 0.862 & -0.358\\
+Latency/hyst. & Nominal & 0.114 $\pm$ 0.021 & 0.681 & 0.254 & 0.361 & 0.830 & -0.476\\
+Latency/hyst. & Domain rand. & 0.105 $\pm$ 0.014 & 0.697 & 0.276 & 0.332 & 0.784 & -0.497\\
+Latency/hyst. & Scalar cal. & 0.123 $\pm$ 0.015 & 0.687 & 0.266 & 0.169 & 0.825 & -0.440\\
+Latency/hyst. & Online ID & 0.132 $\pm$ 0.016 & 0.683 & 0.269 & 0.146 & 0.867 & -0.424\\
+Latency/hyst. & Adaptive MPC & 0.107 $\pm$ 0.012 & 0.694 & 0.277 & 0.138 & 0.837 & -0.455\\
+Latency/hyst. & Robust tube & 0.096 $\pm$ 0.019 & 0.716 & 0.308 & 0.206 & 0.732 & -0.501\\
+Latency/hyst. & CBF-FTC MPC & 0.096 $\pm$ 0.022 & 0.734 & 0.344 & 0.158 & 0.719 & -0.515\\
+Latency/hyst. & UKF observer & 0.132 $\pm$ 0.018 & 0.688 & 0.281 & 0.138 & 0.888 & -0.431\\
+Latency/hyst. & RNN state proxy & 0.140 $\pm$ 0.019 & 0.678 & 0.267 & 0.136 & 0.896 & -0.412\\
+Latency/hyst. & L1 adaptive & 0.102 $\pm$ 0.014 & 0.716 & 0.317 & 0.132 & 0.778 & -0.483\\
+Latency/hyst. & Latent state v4 & 0.136 $\pm$ 0.020 & 0.678 & 0.266 & 0.128 & 0.929 & -0.416\\
+Latency/hyst. & Belief state v5 & 0.156 $\pm$ 0.018 & 0.688 & 0.286 & 0.129 & 0.893 & -0.408\\
+Latency/hyst. & Oracle state & 0.196 $\pm$ 0.017 & 0.685 & 0.293 & 0.131 & 0.937 & -0.373\\
+Fault & Nominal & 0.096 $\pm$ 0.014 & 0.673 & 0.243 & 0.433 & 0.812 & -0.499\\
+Fault & Domain rand. & 0.087 $\pm$ 0.006 & 0.690 & 0.265 & 0.400 & 0.769 & -0.519\\
+Fault & Scalar cal. & 0.104 $\pm$ 0.014 & 0.686 & 0.264 & 0.216 & 0.822 & -0.469\\
+Fault & Online ID & 0.132 $\pm$ 0.018 & 0.675 & 0.254 & 0.198 & 0.880 & -0.423\\
+Fault & Adaptive MPC & 0.103 $\pm$ 0.017 & 0.691 & 0.273 & 0.188 & 0.851 & -0.467\\
+Fault & Robust tube & 0.087 $\pm$ 0.010 & 0.719 & 0.315 & 0.260 & 0.735 & -0.527\\
+Fault & CBF-FTC MPC & 0.090 $\pm$ 0.014 & 0.730 & 0.340 & 0.208 & 0.726 & -0.527\\
+Fault & UKF observer & 0.129 $\pm$ 0.013 & 0.679 & 0.265 & 0.196 & 0.899 & -0.433\\
+Fault & RNN state proxy & 0.128 $\pm$ 0.015 & 0.673 & 0.260 & 0.191 & 0.910 & -0.429\\
+Fault & L1 adaptive & 0.107 $\pm$ 0.013 & 0.708 & 0.300 & 0.187 & 0.797 & -0.478\\
+Fault & Latent state v4 & 0.134 $\pm$ 0.010 & 0.671 & 0.255 & 0.185 & 0.945 & -0.420\\
+Fault & Belief state v5 & 0.165 $\pm$ 0.017 & 0.681 & 0.274 & 0.187 & 0.914 & -0.403\\
+Fault & Oracle state & 0.194 $\pm$ 0.018 & 0.677 & 0.279 & 0.191 & 0.961 & -0.376\\
+Payload/contact & Nominal & 0.107 $\pm$ 0.021 & 0.693 & 0.276 & 0.435 & 0.842 & -0.521\\
+Payload/contact & Domain rand. & 0.089 $\pm$ 0.014 & 0.704 & 0.293 & 0.404 & 0.787 & -0.543\\
+Payload/contact & Scalar cal. & 0.087 $\pm$ 0.012 & 0.698 & 0.278 & 0.238 & 0.846 & -0.506\\
+Payload/contact & Online ID & 0.104 $\pm$ 0.016 & 0.692 & 0.277 & 0.219 & 0.918 & -0.478\\
+Payload/contact & Adaptive MPC & 0.096 $\pm$ 0.014 & 0.700 & 0.289 & 0.209 & 0.884 & -0.492\\
+Payload/contact & Robust tube & 0.077 $\pm$ 0.009 & 0.733 & 0.339 & 0.277 & 0.751 & -0.562\\
+Payload/contact & CBF-FTC MPC & 0.096 $\pm$ 0.013 & 0.739 & 0.355 & 0.230 & 0.746 & -0.538\\
+Payload/contact & UKF observer & 0.123 $\pm$ 0.017 & 0.692 & 0.290 & 0.212 & 0.945 & -0.464\\
+Payload/contact & RNN state proxy & 0.116 $\pm$ 0.016 & 0.682 & 0.276 & 0.211 & 0.958 & -0.461\\
+Payload/contact & L1 adaptive & 0.092 $\pm$ 0.014 & 0.721 & 0.325 & 0.209 & 0.829 & -0.518\\
+Payload/contact & Latent state v4 & 0.121 $\pm$ 0.008 & 0.676 & 0.265 & 0.202 & 0.990 & -0.448\\
+Payload/contact & Belief state v5 & 0.154 $\pm$ 0.019 & 0.689 & 0.290 & 0.206 & 0.956 & -0.432\\
+Payload/contact & Oracle state & 0.192 $\pm$ 0.017 & 0.678 & 0.291 & 0.203 & 1.013 & -0.391\\
+Combined & Nominal & 0.066 $\pm$ 0.015 & 0.736 & 0.346 & 0.748 & 0.895 & -0.683\\
+Combined & Domain rand. & 0.059 $\pm$ 0.008 & 0.759 & 0.379 & 0.689 & 0.842 & -0.704\\
+Combined & Scalar cal. & 0.072 $\pm$ 0.020 & 0.744 & 0.354 & 0.392 & 0.937 & -0.623\\
+Combined & Online ID & 0.089 $\pm$ 0.006 & 0.729 & 0.342 & 0.388 & 1.055 & -0.586\\
+Combined & Adaptive MPC & 0.089 $\pm$ 0.014 & 0.747 & 0.367 & 0.364 & 1.007 & -0.601\\
+Combined & Robust tube & 0.061 $\pm$ 0.009 & 0.775 & 0.400 & 0.474 & 0.811 & -0.672\\
+Combined & CBF-FTC MPC & 0.070 $\pm$ 0.014 & 0.789 & 0.430 & 0.403 & 0.830 & -0.666\\
+Combined & UKF observer & 0.089 $\pm$ 0.014 & 0.730 & 0.348 & 0.378 & 1.089 & -0.587\\
+Combined & RNN state proxy & 0.111 $\pm$ 0.009 & 0.723 & 0.336 & 0.375 & 1.105 & -0.557\\
+Combined & L1 adaptive & 0.083 $\pm$ 0.012 & 0.763 & 0.391 & 0.369 & 0.941 & -0.618\\
+Combined & Latent state v4 & 0.117 $\pm$ 0.018 & 0.714 & 0.329 & 0.342 & 1.145 & -0.540\\
+Combined & Belief state v5 & 0.119 $\pm$ 0.013 & 0.731 & 0.350 & 0.342 & 1.096 & -0.553\\
+Combined & Oracle state & 0.169 $\pm$ 0.014 & 0.716 & 0.348 & 0.337 & 1.183 & -0.497\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\section{Appendix: Hard-Aggregate Seed Units}
+The following seed means are the statistical units used for hard-aggregate paired tests. They show that the mixed conclusion is not a formatting artifact; the safety and tracking failures appear across seed-level aggregates.
+\begin{center}
+\tiny
+\begin{longtable}{p{0.31\linewidth}rrrrrr}
+\caption{Hard-aggregate seed means. These rows are the units used by paired tests.}\label{tab:hard-seed}\\
+\toprule
+Method & Seed & Success & Tracking & Safety & Asym. err. & Utility\\
+\midrule
+\endfirsthead
+\caption[]{Hard-aggregate seed means. These rows are the units used by paired tests. (continued)}\\
+\toprule
+Method & Seed & Success & Tracking & Safety & Asym. err. & Utility\\
+\midrule
+\endhead
+Adaptive MPC & 0 & 0.090 & 0.718 & 0.316 & 0.268 & -0.534\\
+Adaptive MPC & 1 & 0.109 & 0.712 & 0.308 & 0.253 & -0.505\\
+Adaptive MPC & 2 & 0.099 & 0.708 & 0.311 & 0.251 & -0.515\\
+Adaptive MPC & 3 & 0.097 & 0.717 & 0.314 & 0.249 & -0.522\\
+Adaptive MPC & 4 & 0.108 & 0.712 & 0.320 & 0.250 & -0.514\\
+Adaptive MPC & 5 & 0.097 & 0.705 & 0.290 & 0.257 & -0.504\\
+Adaptive MPC & 6 & 0.087 & 0.711 & 0.303 & 0.255 & -0.525\\
+Adaptive MPC & 7 & 0.083 & 0.715 & 0.313 & 0.247 & -0.535\\
+Adaptive MPC & 8 & 0.090 & 0.722 & 0.321 & 0.255 & -0.537\\
+Adaptive MPC & 9 & 0.099 & 0.706 & 0.302 & 0.252 & -0.509\\
+CBF-FTC MPC & 0 & 0.078 & 0.772 & 0.405 & 0.291 & -0.612\\
+CBF-FTC MPC & 1 & 0.076 & 0.747 & 0.370 & 0.278 & -0.581\\
+CBF-FTC MPC & 2 & 0.095 & 0.741 & 0.365 & 0.276 & -0.555\\
+CBF-FTC MPC & 3 & 0.102 & 0.747 & 0.373 & 0.282 & -0.557\\
+CBF-FTC MPC & 4 & 0.082 & 0.772 & 0.387 & 0.273 & -0.596\\
+CBF-FTC MPC & 5 & 0.094 & 0.744 & 0.365 & 0.284 & -0.561\\
+CBF-FTC MPC & 6 & 0.101 & 0.747 & 0.369 & 0.282 & -0.556\\
+CBF-FTC MPC & 7 & 0.082 & 0.757 & 0.385 & 0.276 & -0.588\\
+CBF-FTC MPC & 8 & 0.071 & 0.755 & 0.380 & 0.283 & -0.595\\
+CBF-FTC MPC & 9 & 0.073 & 0.743 & 0.350 & 0.279 & -0.572\\
+Domain rand. & 0 & 0.090 & 0.723 & 0.318 & 0.510 & -0.584\\
+Domain rand. & 1 & 0.080 & 0.714 & 0.306 & 0.501 & -0.583\\
+Domain rand. & 2 & 0.078 & 0.720 & 0.320 & 0.500 & -0.595\\
+Domain rand. & 3 & 0.061 & 0.718 & 0.308 & 0.489 & -0.603\\
+Domain rand. & 4 & 0.073 & 0.728 & 0.332 & 0.485 & -0.609\\
+Domain rand. & 5 & 0.087 & 0.718 & 0.312 & 0.506 & -0.582\\
+Domain rand. & 6 & 0.071 & 0.711 & 0.294 & 0.499 & -0.584\\
+Domain rand. & 7 & 0.080 & 0.719 & 0.323 & 0.495 & -0.594\\
+Domain rand. & 8 & 0.073 & 0.719 & 0.312 & 0.493 & -0.594\\
+Domain rand. & 9 & 0.090 & 0.706 & 0.296 & 0.499 & -0.561\\
+Belief state v5 & 0 & 0.108 & 0.716 & 0.326 & 0.255 & -0.521\\
+Belief state v5 & 1 & 0.165 & 0.692 & 0.295 & 0.243 & -0.434\\
+Belief state v5 & 2 & 0.161 & 0.694 & 0.304 & 0.240 & -0.442\\
+Belief state v5 & 3 & 0.144 & 0.703 & 0.306 & 0.244 & -0.466\\
+Belief state v5 & 4 & 0.134 & 0.705 & 0.313 & 0.242 & -0.482\\
+Belief state v5 & 5 & 0.135 & 0.692 & 0.289 & 0.252 & -0.461\\
+Belief state v5 & 6 & 0.174 & 0.692 & 0.282 & 0.248 & -0.419\\
+Belief state v5 & 7 & 0.149 & 0.709 & 0.327 & 0.232 & -0.473\\
+Belief state v5 & 8 & 0.137 & 0.709 & 0.315 & 0.248 & -0.481\\
+Belief state v5 & 9 & 0.149 & 0.688 & 0.289 & 0.247 & -0.445\\
+Latent state v4 & 0 & 0.134 & 0.696 & 0.290 & 0.249 & -0.469\\
+Latent state v4 & 1 & 0.123 & 0.676 & 0.273 & 0.241 & -0.460\\
+Latent state v4 & 2 & 0.115 & 0.686 & 0.287 & 0.240 & -0.480\\
+Latent state v4 & 3 & 0.149 & 0.680 & 0.270 & 0.245 & -0.435\\
+Latent state v4 & 4 & 0.118 & 0.707 & 0.316 & 0.235 & -0.502\\
+Latent state v4 & 5 & 0.135 & 0.679 & 0.269 & 0.250 & -0.449\\
+Latent state v4 & 6 & 0.132 & 0.675 & 0.261 & 0.246 & -0.445\\
+Latent state v4 & 7 & 0.094 & 0.696 & 0.293 & 0.230 & -0.508\\
+Latent state v4 & 8 & 0.127 & 0.685 & 0.284 & 0.244 & -0.467\\
+Latent state v4 & 9 & 0.115 & 0.688 & 0.284 & 0.247 & -0.481\\
+Nominal & 0 & 0.076 & 0.717 & 0.307 & 0.552 & -0.602\\
+Nominal & 1 & 0.123 & 0.690 & 0.274 & 0.541 & -0.522\\
+Nominal & 2 & 0.109 & 0.688 & 0.282 & 0.541 & -0.539\\
+Nominal & 3 & 0.071 & 0.700 & 0.280 & 0.530 & -0.579\\
+Nominal & 4 & 0.075 & 0.710 & 0.308 & 0.525 & -0.597\\
+Nominal & 5 & 0.071 & 0.705 & 0.292 & 0.547 & -0.592\\
+Nominal & 6 & 0.095 & 0.697 & 0.280 & 0.540 & -0.555\\
+Nominal & 7 & 0.078 & 0.700 & 0.291 & 0.536 & -0.580\\
+Nominal & 8 & 0.106 & 0.698 & 0.288 & 0.534 & -0.548\\
+Nominal & 9 & 0.090 & 0.698 & 0.281 & 0.540 & -0.561\\
+Online ID & 0 & 0.106 & 0.706 & 0.298 & 0.278 & -0.507\\
+Online ID & 1 & 0.109 & 0.691 & 0.287 & 0.268 & -0.487\\
+Online ID & 2 & 0.101 & 0.697 & 0.300 & 0.266 & -0.506\\
+Online ID & 3 & 0.108 & 0.698 & 0.283 & 0.266 & -0.492\\
+Online ID & 4 & 0.099 & 0.713 & 0.312 & 0.263 & -0.523\\
+Online ID & 5 & 0.128 & 0.691 & 0.280 & 0.271 & -0.466\\
+Online ID & 6 & 0.090 & 0.692 & 0.272 & 0.269 & -0.500\\
+Online ID & 7 & 0.128 & 0.703 & 0.300 & 0.260 & -0.481\\
+Online ID & 8 & 0.092 & 0.700 & 0.295 & 0.270 & -0.515\\
+Online ID & 9 & 0.120 & 0.695 & 0.283 & 0.271 & -0.478\\
+Oracle state & 0 & 0.168 & 0.707 & 0.328 & 0.252 & -0.459\\
+Oracle state & 1 & 0.177 & 0.685 & 0.301 & 0.241 & -0.423\\
+Oracle state & 2 & 0.193 & 0.689 & 0.308 & 0.237 & -0.412\\
+Oracle state & 3 & 0.196 & 0.684 & 0.289 & 0.243 & -0.398\\
+Oracle state & 4 & 0.168 & 0.705 & 0.336 & 0.240 & -0.461\\
+Oracle state & 5 & 0.177 & 0.690 & 0.306 & 0.254 & -0.430\\
+Oracle state & 6 & 0.227 & 0.676 & 0.280 & 0.245 & -0.358\\
+Oracle state & 7 & 0.189 & 0.694 & 0.322 & 0.235 & -0.425\\
+Oracle state & 8 & 0.186 & 0.690 & 0.305 & 0.248 & -0.420\\
+Oracle state & 9 & 0.168 & 0.683 & 0.288 & 0.242 & -0.426\\
+RNN state proxy & 0 & 0.130 & 0.697 & 0.296 & 0.269 & -0.477\\
+RNN state proxy & 1 & 0.116 & 0.683 & 0.280 & 0.259 & -0.475\\
+RNN state proxy & 2 & 0.116 & 0.690 & 0.298 & 0.258 & -0.487\\
+RNN state proxy & 3 & 0.123 & 0.692 & 0.287 & 0.260 & -0.475\\
+RNN state proxy & 4 & 0.108 & 0.703 & 0.311 & 0.254 & -0.508\\
+RNN state proxy & 5 & 0.111 & 0.697 & 0.291 & 0.267 & -0.494\\
+RNN state proxy & 6 & 0.122 & 0.696 & 0.290 & 0.263 & -0.481\\
+RNN state proxy & 7 & 0.125 & 0.696 & 0.298 & 0.243 & -0.479\\
+RNN state proxy & 8 & 0.095 & 0.697 & 0.291 & 0.264 & -0.508\\
+RNN state proxy & 9 & 0.137 & 0.674 & 0.263 & 0.256 & -0.439\\
+L1 adaptive & 0 & 0.078 & 0.736 & 0.342 & 0.266 & -0.561\\
+L1 adaptive & 1 & 0.108 & 0.724 & 0.322 & 0.256 & -0.512\\
+L1 adaptive & 2 & 0.108 & 0.727 & 0.337 & 0.250 & -0.520\\
+L1 adaptive & 3 & 0.094 & 0.723 & 0.332 & 0.252 & -0.531\\
+L1 adaptive & 4 & 0.094 & 0.739 & 0.355 & 0.253 & -0.551\\
+L1 adaptive & 5 & 0.099 & 0.727 & 0.329 & 0.260 & -0.527\\
+L1 adaptive & 6 & 0.101 & 0.736 & 0.342 & 0.257 & -0.537\\
+L1 adaptive & 7 & 0.082 & 0.735 & 0.355 & 0.247 & -0.560\\
+L1 adaptive & 8 & 0.090 & 0.731 & 0.335 & 0.251 & -0.540\\
+L1 adaptive & 9 & 0.089 & 0.728 & 0.339 & 0.258 & -0.542\\
+Robust tube & 0 & 0.062 & 0.762 & 0.376 & 0.349 & -0.624\\
+Robust tube & 1 & 0.082 & 0.730 & 0.328 & 0.338 & -0.562\\
+Robust tube & 2 & 0.071 & 0.732 & 0.344 & 0.336 & -0.582\\
+Robust tube & 3 & 0.069 & 0.748 & 0.352 & 0.329 & -0.594\\
+Robust tube & 4 & 0.078 & 0.751 & 0.368 & 0.327 & -0.597\\
+Robust tube & 5 & 0.066 & 0.742 & 0.348 & 0.345 & -0.597\\
+Robust tube & 6 & 0.080 & 0.738 & 0.347 & 0.338 & -0.577\\
+Robust tube & 7 & 0.087 & 0.742 & 0.356 & 0.332 & -0.576\\
+Robust tube & 8 & 0.073 & 0.740 & 0.349 & 0.337 & -0.587\\
+Robust tube & 9 & 0.082 & 0.736 & 0.345 & 0.338 & -0.573\\
+Scalar cal. & 0 & 0.092 & 0.718 & 0.308 & 0.292 & -0.540\\
+Scalar cal. & 1 & 0.118 & 0.702 & 0.287 & 0.285 & -0.493\\
+Scalar cal. & 2 & 0.109 & 0.701 & 0.297 & 0.285 & -0.505\\
+Scalar cal. & 3 & 0.075 & 0.707 & 0.293 & 0.276 & -0.540\\
+Scalar cal. & 4 & 0.085 & 0.716 & 0.314 & 0.273 & -0.546\\
+Scalar cal. & 5 & 0.080 & 0.708 & 0.305 & 0.288 & -0.545\\
+Scalar cal. & 6 & 0.071 & 0.711 & 0.287 & 0.282 & -0.544\\
+Scalar cal. & 7 & 0.089 & 0.711 & 0.311 & 0.276 & -0.538\\
+Scalar cal. & 8 & 0.071 & 0.714 & 0.299 & 0.281 & -0.551\\
+Scalar cal. & 9 & 0.085 & 0.704 & 0.285 & 0.281 & -0.525\\
+UKF observer & 0 & 0.111 & 0.713 & 0.313 & 0.273 & -0.512\\
+UKF observer & 1 & 0.113 & 0.703 & 0.307 & 0.260 & -0.500\\
+UKF observer & 2 & 0.120 & 0.696 & 0.304 & 0.256 & -0.487\\
+UKF observer & 3 & 0.116 & 0.700 & 0.305 & 0.262 & -0.494\\
+UKF observer & 4 & 0.104 & 0.707 & 0.318 & 0.254 & -0.517\\
+UKF observer & 5 & 0.108 & 0.695 & 0.294 & 0.272 & -0.497\\
+UKF observer & 6 & 0.108 & 0.691 & 0.276 & 0.263 & -0.483\\
+UKF observer & 7 & 0.111 & 0.703 & 0.298 & 0.251 & -0.495\\
+UKF observer & 8 & 0.128 & 0.706 & 0.309 & 0.265 & -0.487\\
+UKF observer & 9 & 0.120 & 0.693 & 0.286 & 0.263 & -0.477\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\section{Appendix: Complete Paired Tests}
+The table below gives every hard-aggregate paired difference for v5 minus each reference method across the predefined paired metrics. Primary success succeeds against v4, but tracking and safety fail against v4.
+\begin{center}
+\tiny
+\begin{longtable}{p{0.31\linewidth}p{0.23\linewidth}rrrr}
+\caption{All hard-aggregate paired differences for belief state v5 minus each reference method.}\label{tab:full-pairwise}\\
+\toprule
+Reference & Metric & Mean diff & CI95 & Lower95 & Upper95\\
+\midrule
+\endfirsthead
+\caption[]{All hard-aggregate paired differences for belief state v5 minus each reference method. (continued)}\\
+\toprule
+Reference & Metric & Mean diff & CI95 & Lower95 & Upper95\\
+\midrule
+\endhead
+Adaptive MPC & task\_success & 0.050 & 0.012 & 0.037 & 0.062\\
+Adaptive MPC & tracking\_error & -0.012 & 0.004 & -0.016 & -0.009\\
+Adaptive MPC & safety\_violation & -0.005 & 0.006 & -0.011 & 0.002\\
+Adaptive MPC & asymmetry\_error & -0.009 & 0.002 & -0.011 & -0.007\\
+Adaptive MPC & actuator\_energy & 0.075 & 0.003 & 0.072 & 0.078\\
+Adaptive MPC & adaptation\_regret & -0.003 & 0.001 & -0.005 & -0.002\\
+Adaptive MPC & constraint\_margin & 0.012 & 0.004 & 0.009 & 0.016\\
+Adaptive MPC & robust\_utility & 0.058 & 0.016 & 0.042 & 0.073\\
+CBF-FTC MPC & task\_success & 0.060 & 0.011 & 0.049 & 0.072\\
+CBF-FTC MPC & tracking\_error & -0.052 & 0.004 & -0.057 & -0.048\\
+CBF-FTC MPC & safety\_violation & -0.070 & 0.006 & -0.076 & -0.064\\
+CBF-FTC MPC & asymmetry\_error & -0.035 & 0.002 & -0.038 & -0.033\\
+CBF-FTC MPC & actuator\_energy & 0.221 & 0.004 & 0.217 & 0.225\\
+CBF-FTC MPC & adaptation\_regret & -0.015 & 0.001 & -0.016 & -0.014\\
+CBF-FTC MPC & constraint\_margin & 0.052 & 0.004 & 0.048 & 0.057\\
+CBF-FTC MPC & robust\_utility & 0.115 & 0.012 & 0.103 & 0.126\\
+Domain rand. & task\_success & 0.067 & 0.015 & 0.053 & 0.082\\
+Domain rand. & tracking\_error & -0.017 & 0.004 & -0.022 & -0.013\\
+Domain rand. & safety\_violation & -0.007 & 0.006 & -0.014 & -0.001\\
+Domain rand. & asymmetry\_error & -0.253 & 0.004 & -0.257 & -0.248\\
+Domain rand. & actuator\_energy & 0.189 & 0.003 & 0.186 & 0.192\\
+Domain rand. & adaptation\_regret & -0.005 & 0.001 & -0.006 & -0.004\\
+Domain rand. & constraint\_margin & 0.017 & 0.004 & 0.013 & 0.022\\
+Domain rand. & robust\_utility & 0.126 & 0.017 & 0.109 & 0.144\\
+Latent state v4 & task\_success & 0.022 & 0.017 & 0.005 & 0.038\\
+Latent state v4 & tracking\_error & 0.013 & 0.006 & 0.008 & 0.019\\
+Latent state v4 & safety\_violation & 0.022 & 0.008 & 0.014 & 0.030\\
+Latent state v4 & asymmetry\_error & 0.002 & 0.001 & 0.001 & 0.004\\
+Latent state v4 & actuator\_energy & -0.038 & 0.004 & -0.042 & -0.034\\
+Latent state v4 & adaptation\_regret & 0.004 & 0.002 & 0.002 & 0.005\\
+Latent state v4 & constraint\_margin & -0.013 & 0.006 & -0.019 & -0.008\\
+Latent state v4 & robust\_utility & 0.007 & 0.020 & -0.013 & 0.027\\
+Nominal & task\_success & 0.056 & 0.010 & 0.046 & 0.066\\
+Nominal & tracking\_error & -0.000 & 0.005 & -0.005 & 0.005\\
+Nominal & safety\_violation & 0.016 & 0.008 & 0.009 & 0.024\\
+Nominal & asymmetry\_error & -0.294 & 0.004 & -0.298 & -0.289\\
+Nominal & actuator\_energy & 0.139 & 0.007 & 0.132 & 0.146\\
+Nominal & adaptation\_regret & -0.000 & 0.001 & -0.001 & 0.001\\
+Nominal & constraint\_margin & 0.001 & 0.005 & -0.004 & 0.005\\
+Nominal & robust\_utility & 0.105 & 0.014 & 0.092 & 0.119\\
+Online ID & task\_success & 0.037 & 0.015 & 0.022 & 0.053\\
+Online ID & tracking\_error & 0.002 & 0.004 & -0.002 & 0.006\\
+Online ID & safety\_violation & 0.014 & 0.006 & 0.007 & 0.020\\
+Online ID & asymmetry\_error & -0.023 & 0.002 & -0.025 & -0.022\\
+Online ID & actuator\_energy & 0.038 & 0.004 & 0.033 & 0.042\\
+Online ID & adaptation\_regret & 0.000 & 0.001 & -0.001 & 0.002\\
+Online ID & constraint\_margin & -0.002 & 0.004 & -0.006 & 0.002\\
+Online ID & robust\_utility & 0.033 & 0.018 & 0.015 & 0.051\\
+Oracle state & task\_success & -0.039 & 0.010 & -0.049 & -0.030\\
+Oracle state & tracking\_error & 0.010 & 0.005 & 0.005 & 0.015\\
+Oracle state & safety\_violation & -0.002 & 0.007 & -0.009 & 0.006\\
+Oracle state & asymmetry\_error & 0.001 & 0.001 & -0.000 & 0.003\\
+Oracle state & actuator\_energy & -0.064 & 0.004 & -0.068 & -0.060\\
+Oracle state & adaptation\_regret & -0.066 & 0.002 & -0.068 & -0.065\\
+Oracle state & constraint\_margin & -0.010 & 0.005 & -0.015 & -0.005\\
+Oracle state & robust\_utility & -0.041 & 0.013 & -0.054 & -0.028\\
+RNN state proxy & task\_success & 0.027 & 0.014 & 0.014 & 0.041\\
+RNN state proxy & tracking\_error & 0.008 & 0.005 & 0.003 & 0.013\\
+RNN state proxy & safety\_violation & 0.014 & 0.009 & 0.006 & 0.023\\
+RNN state proxy & asymmetry\_error & -0.014 & 0.002 & -0.016 & -0.013\\
+RNN state proxy & actuator\_energy & -0.002 & 0.005 & -0.007 & 0.002\\
+RNN state proxy & adaptation\_regret & 0.002 & 0.001 & 0.001 & 0.004\\
+RNN state proxy & constraint\_margin & -0.008 & 0.005 & -0.013 & -0.003\\
+RNN state proxy & robust\_utility & 0.020 & 0.019 & 0.001 & 0.038\\
+L1 adaptive & task\_success & 0.052 & 0.009 & 0.043 & 0.060\\
+L1 adaptive & tracking\_error & -0.030 & 0.005 & -0.036 & -0.025\\
+L1 adaptive & safety\_violation & -0.034 & 0.009 & -0.043 & -0.026\\
+L1 adaptive & asymmetry\_error & -0.010 & 0.002 & -0.012 & -0.008\\
+L1 adaptive & actuator\_energy & 0.133 & 0.003 & 0.130 & 0.137\\
+L1 adaptive & adaptation\_regret & -0.009 & 0.001 & -0.010 & -0.007\\
+L1 adaptive & constraint\_margin & 0.030 & 0.005 & 0.025 & 0.036\\
+L1 adaptive & robust\_utility & 0.076 & 0.013 & 0.062 & 0.089\\
+Robust tube & task\_success & 0.071 & 0.009 & 0.061 & 0.080\\
+Robust tube & tracking\_error & -0.042 & 0.004 & -0.046 & -0.038\\
+Robust tube & safety\_violation & -0.047 & 0.008 & -0.054 & -0.039\\
+Robust tube & asymmetry\_error & -0.092 & 0.003 & -0.095 & -0.089\\
+Robust tube & actuator\_energy & 0.223 & 0.004 & 0.218 & 0.227\\
+Robust tube & adaptation\_regret & -0.012 & 0.001 & -0.013 & -0.011\\
+Robust tube & constraint\_margin & 0.042 & 0.004 & 0.038 & 0.046\\
+Robust tube & robust\_utility & 0.124 & 0.011 & 0.113 & 0.136\\
+Scalar cal. & task\_success & 0.058 & 0.013 & 0.045 & 0.072\\
+Scalar cal. & tracking\_error & -0.009 & 0.004 & -0.013 & -0.005\\
+Scalar cal. & safety\_violation & 0.006 & 0.007 & -0.001 & 0.013\\
+Scalar cal. & asymmetry\_error & -0.037 & 0.003 & -0.040 & -0.034\\
+Scalar cal. & actuator\_energy & 0.120 & 0.004 & 0.116 & 0.124\\
+Scalar cal. & adaptation\_regret & -0.003 & 0.001 & -0.004 & -0.001\\
+Scalar cal. & constraint\_margin & 0.009 & 0.004 & 0.005 & 0.013\\
+Scalar cal. & robust\_utility & 0.070 & 0.016 & 0.054 & 0.086\\
+UKF observer & task\_success & 0.032 & 0.012 & 0.019 & 0.044\\
+UKF observer & tracking\_error & -0.000 & 0.003 & -0.004 & 0.003\\
+UKF observer & safety\_violation & 0.004 & 0.007 & -0.003 & 0.011\\
+UKF observer & asymmetry\_error & -0.017 & 0.001 & -0.018 & -0.016\\
+UKF observer & actuator\_energy & 0.011 & 0.003 & 0.008 & 0.014\\
+UKF observer & adaptation\_regret & -0.000 & 0.001 & -0.001 & 0.001\\
+UKF observer & constraint\_margin & 0.000 & 0.003 & -0.003 & 0.004\\
+UKF observer & robust\_utility & 0.032 & 0.014 & 0.018 & 0.047\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\section{Appendix: Complete Stress Sweep}
+The main text highlights combined stress because it is the most important deployment stressor, but all axes are reported here. This table includes gain asymmetry, deadzone/saturation, latency, thermal drift, intermittent fault, and combined stress.
+\begin{center}
+\tiny
+\begin{longtable}{p{0.16\linewidth}rp{0.23\linewidth}rrrrr}
+\caption{All stress-sweep metrics across six axes, six levels, and seven methods.}\label{tab:full-stress}\\
+\toprule
+Axis & Level & Method & Success & Track. & Safety & Asym. & Utility\\
+\midrule
+\endfirsthead
+\caption[]{All stress-sweep metrics across six axes, six levels, and seven methods. (continued)}\\
+\toprule
+Axis & Level & Method & Success & Track. & Safety & Asym. & Utility\\
+\midrule
+\endhead
+gain\_asymmetry & 0.0 & Domain rand. & 0.064 & 0.746 & 0.353 & 0.297 & -0.616\\
+gain\_asymmetry & 0.0 & Online ID & 0.104 & 0.719 & 0.317 & 0.248 & -0.526\\
+gain\_asymmetry & 0.0 & CBF-FTC MPC & 0.055 & 0.770 & 0.398 & 0.264 & -0.632\\
+gain\_asymmetry & 0.0 & UKF observer & 0.115 & 0.714 & 0.321 & 0.260 & -0.518\\
+gain\_asymmetry & 0.0 & L1 adaptive & 0.092 & 0.746 & 0.360 & 0.263 & -0.568\\
+gain\_asymmetry & 0.0 & Belief state v5 & 0.117 & 0.718 & 0.321 & 0.254 & -0.518\\
+gain\_asymmetry & 0.0 & Oracle state & 0.162 & 0.699 & 0.315 & 0.243 & -0.463\\
+gain\_asymmetry & 0.2 & Domain rand. & 0.054 & 0.745 & 0.351 & 0.363 & -0.635\\
+gain\_asymmetry & 0.2 & Online ID & 0.099 & 0.712 & 0.316 & 0.278 & -0.532\\
+gain\_asymmetry & 0.2 & CBF-FTC MPC & 0.083 & 0.779 & 0.415 & 0.288 & -0.622\\
+gain\_asymmetry & 0.2 & UKF observer & 0.098 & 0.708 & 0.308 & 0.278 & -0.528\\
+gain\_asymmetry & 0.2 & L1 adaptive & 0.102 & 0.744 & 0.361 & 0.282 & -0.559\\
+gain\_asymmetry & 0.2 & Belief state v5 & 0.130 & 0.710 & 0.318 & 0.269 & -0.503\\
+gain\_asymmetry & 0.2 & Oracle state & 0.172 & 0.702 & 0.327 & 0.260 & -0.464\\
+gain\_asymmetry & 0.4 & Domain rand. & 0.074 & 0.748 & 0.358 & 0.484 & -0.640\\
+gain\_asymmetry & 0.4 & Online ID & 0.098 & 0.721 & 0.322 & 0.321 & -0.550\\
+gain\_asymmetry & 0.4 & CBF-FTC MPC & 0.074 & 0.784 & 0.421 & 0.333 & -0.643\\
+gain\_asymmetry & 0.4 & UKF observer & 0.124 & 0.715 & 0.322 & 0.316 & -0.519\\
+gain\_asymmetry & 0.4 & L1 adaptive & 0.091 & 0.756 & 0.378 & 0.315 & -0.591\\
+gain\_asymmetry & 0.4 & Belief state v5 & 0.122 & 0.719 & 0.337 & 0.296 & -0.529\\
+gain\_asymmetry & 0.4 & Oracle state & 0.175 & 0.703 & 0.321 & 0.284 & -0.462\\
+gain\_asymmetry & 0.6 & Domain rand. & 0.069 & 0.750 & 0.360 & 0.634 & -0.671\\
+gain\_asymmetry & 0.6 & Online ID & 0.107 & 0.722 & 0.334 & 0.367 & -0.555\\
+gain\_asymmetry & 0.6 & CBF-FTC MPC & 0.074 & 0.774 & 0.403 & 0.378 & -0.636\\
+gain\_asymmetry & 0.6 & UKF observer & 0.093 & 0.723 & 0.333 & 0.359 & -0.568\\
+gain\_asymmetry & 0.6 & L1 adaptive & 0.095 & 0.756 & 0.384 & 0.351 & -0.596\\
+gain\_asymmetry & 0.6 & Belief state v5 & 0.121 & 0.720 & 0.334 & 0.335 & -0.535\\
+gain\_asymmetry & 0.6 & Oracle state & 0.174 & 0.704 & 0.331 & 0.322 & -0.475\\
+gain\_asymmetry & 0.8 & Domain rand. & 0.062 & 0.755 & 0.367 & 0.845 & -0.720\\
+gain\_asymmetry & 0.8 & Online ID & 0.075 & 0.743 & 0.349 & 0.447 & -0.621\\
+gain\_asymmetry & 0.8 & CBF-FTC MPC & 0.072 & 0.786 & 0.417 & 0.461 & -0.666\\
+gain\_asymmetry & 0.8 & UKF observer & 0.083 & 0.740 & 0.352 & 0.432 & -0.610\\
+gain\_asymmetry & 0.8 & L1 adaptive & 0.063 & 0.773 & 0.405 & 0.416 & -0.659\\
+gain\_asymmetry & 0.8 & Belief state v5 & 0.129 & 0.738 & 0.356 & 0.386 & -0.555\\
+gain\_asymmetry & 0.8 & Oracle state & 0.146 & 0.728 & 0.360 & 0.381 & -0.540\\
+gain\_asymmetry & 1.0 & Domain rand. & 0.069 & 0.766 & 0.389 & 1.023 & -0.760\\
+gain\_asymmetry & 1.0 & Online ID & 0.072 & 0.752 & 0.366 & 0.519 & -0.652\\
+gain\_asymmetry & 1.0 & CBF-FTC MPC & 0.063 & 0.803 & 0.438 & 0.540 & -0.707\\
+gain\_asymmetry & 1.0 & UKF observer & 0.075 & 0.756 & 0.375 & 0.489 & -0.648\\
+gain\_asymmetry & 1.0 & L1 adaptive & 0.057 & 0.789 & 0.421 & 0.475 & -0.693\\
+gain\_asymmetry & 1.0 & Belief state v5 & 0.087 & 0.758 & 0.381 & 0.439 & -0.630\\
+gain\_asymmetry & 1.0 & Oracle state & 0.135 & 0.741 & 0.365 & 0.429 & -0.568\\
+deadzone\_saturation & 0.0 & Domain rand. & 0.117 & 0.696 & 0.297 & 0.702 & -0.554\\
+deadzone\_saturation & 0.0 & Online ID & 0.127 & 0.688 & 0.290 & 0.246 & -0.457\\
+deadzone\_saturation & 0.0 & CBF-FTC MPC & 0.102 & 0.739 & 0.365 & 0.289 & -0.539\\
+deadzone\_saturation & 0.0 & UKF observer & 0.127 & 0.698 & 0.305 & 0.195 & -0.458\\
+deadzone\_saturation & 0.0 & L1 adaptive & 0.105 & 0.719 & 0.335 & 0.201 & -0.499\\
+deadzone\_saturation & 0.0 & Belief state v5 & 0.138 & 0.711 & 0.330 & 0.173 & -0.462\\
+deadzone\_saturation & 0.0 & Oracle state & 0.161 & 0.701 & 0.321 & 0.132 & -0.422\\
+deadzone\_saturation & 0.2 & Domain rand. & 0.098 & 0.716 & 0.317 & 0.706 & -0.601\\
+deadzone\_saturation & 0.2 & Online ID & 0.102 & 0.705 & 0.301 & 0.313 & -0.515\\
+deadzone\_saturation & 0.2 & CBF-FTC MPC & 0.092 & 0.760 & 0.386 & 0.343 & -0.587\\
+deadzone\_saturation & 0.2 & UKF observer & 0.102 & 0.708 & 0.318 & 0.282 & -0.520\\
+deadzone\_saturation & 0.2 & L1 adaptive & 0.078 & 0.743 & 0.361 & 0.278 & -0.573\\
+deadzone\_saturation & 0.2 & Belief state v5 & 0.132 & 0.709 & 0.324 & 0.263 & -0.490\\
+deadzone\_saturation & 0.2 & Oracle state & 0.157 & 0.709 & 0.330 & 0.249 & -0.468\\
+deadzone\_saturation & 0.4 & Domain rand. & 0.062 & 0.743 & 0.345 & 0.695 & -0.674\\
+deadzone\_saturation & 0.4 & Online ID & 0.092 & 0.724 & 0.326 & 0.372 & -0.566\\
+deadzone\_saturation & 0.4 & CBF-FTC MPC & 0.094 & 0.773 & 0.400 & 0.390 & -0.614\\
+deadzone\_saturation & 0.4 & UKF observer & 0.100 & 0.724 & 0.339 & 0.355 & -0.562\\
+deadzone\_saturation & 0.4 & L1 adaptive & 0.089 & 0.756 & 0.380 & 0.352 & -0.598\\
+deadzone\_saturation & 0.4 & Belief state v5 & 0.130 & 0.725 & 0.341 & 0.325 & -0.528\\
+deadzone\_saturation & 0.4 & Oracle state & 0.162 & 0.712 & 0.341 & 0.318 & -0.492\\
+deadzone\_saturation & 0.6 & Domain rand. & 0.049 & 0.769 & 0.387 & 0.695 & -0.730\\
+deadzone\_saturation & 0.6 & Online ID & 0.083 & 0.737 & 0.343 & 0.415 & -0.603\\
+deadzone\_saturation & 0.6 & CBF-FTC MPC & 0.056 & 0.795 & 0.430 & 0.417 & -0.689\\
+deadzone\_saturation & 0.6 & UKF observer & 0.091 & 0.734 & 0.357 & 0.407 & -0.600\\
+deadzone\_saturation & 0.6 & L1 adaptive & 0.087 & 0.771 & 0.396 & 0.395 & -0.629\\
+deadzone\_saturation & 0.6 & Belief state v5 & 0.101 & 0.733 & 0.352 & 0.367 & -0.581\\
+deadzone\_saturation & 0.6 & Oracle state & 0.152 & 0.712 & 0.335 & 0.361 & -0.514\\
+deadzone\_saturation & 0.8 & Domain rand. & 0.046 & 0.783 & 0.405 & 0.689 & -0.757\\
+deadzone\_saturation & 0.8 & Online ID & 0.085 & 0.745 & 0.364 & 0.435 & -0.627\\
+deadzone\_saturation & 0.8 & CBF-FTC MPC & 0.062 & 0.810 & 0.450 & 0.439 & -0.709\\
+deadzone\_saturation & 0.8 & UKF observer & 0.073 & 0.752 & 0.373 & 0.428 & -0.647\\
+deadzone\_saturation & 0.8 & L1 adaptive & 0.067 & 0.787 & 0.406 & 0.421 & -0.672\\
+deadzone\_saturation & 0.8 & Belief state v5 & 0.100 & 0.745 & 0.363 & 0.378 & -0.603\\
+deadzone\_saturation & 0.8 & Oracle state & 0.148 & 0.726 & 0.346 & 0.377 & -0.542\\
+deadzone\_saturation & 1.0 & Domain rand. & 0.037 & 0.811 & 0.444 & 0.697 & -0.808\\
+deadzone\_saturation & 1.0 & Online ID & 0.068 & 0.763 & 0.373 & 0.458 & -0.667\\
+deadzone\_saturation & 1.0 & CBF-FTC MPC & 0.047 & 0.831 & 0.480 & 0.454 & -0.758\\
+deadzone\_saturation & 1.0 & UKF observer & 0.081 & 0.757 & 0.378 & 0.448 & -0.652\\
+deadzone\_saturation & 1.0 & L1 adaptive & 0.062 & 0.802 & 0.432 & 0.439 & -0.703\\
+deadzone\_saturation & 1.0 & Belief state v5 & 0.102 & 0.756 & 0.388 & 0.397 & -0.627\\
+deadzone\_saturation & 1.0 & Oracle state & 0.125 & 0.730 & 0.357 & 0.395 & -0.582\\
+latency & 0.0 & Domain rand. & 0.063 & 0.729 & 0.333 & 0.709 & -0.664\\
+latency & 0.0 & Online ID & 0.098 & 0.707 & 0.296 & 0.408 & -0.543\\
+latency & 0.0 & CBF-FTC MPC & 0.090 & 0.760 & 0.380 & 0.418 & -0.607\\
+latency & 0.0 & UKF observer & 0.119 & 0.693 & 0.301 & 0.394 & -0.515\\
+latency & 0.0 & L1 adaptive & 0.077 & 0.737 & 0.347 & 0.389 & -0.590\\
+latency & 0.0 & Belief state v5 & 0.144 & 0.701 & 0.309 & 0.371 & -0.495\\
+latency & 0.0 & Oracle state & 0.193 & 0.686 & 0.299 & 0.360 & -0.436\\
+latency & 0.2 & Domain rand. & 0.061 & 0.751 & 0.354 & 0.698 & -0.687\\
+latency & 0.2 & Online ID & 0.093 & 0.721 & 0.319 & 0.395 & -0.566\\
+latency & 0.2 & CBF-FTC MPC & 0.069 & 0.778 & 0.403 & 0.411 & -0.648\\
+latency & 0.2 & UKF observer & 0.107 & 0.713 & 0.325 & 0.388 & -0.549\\
+latency & 0.2 & L1 adaptive & 0.079 & 0.758 & 0.379 & 0.383 & -0.616\\
+latency & 0.2 & Belief state v5 & 0.117 & 0.718 & 0.332 & 0.360 & -0.541\\
+latency & 0.2 & Oracle state & 0.176 & 0.707 & 0.328 & 0.352 & -0.477\\
+latency & 0.4 & Domain rand. & 0.063 & 0.751 & 0.357 & 0.705 & -0.687\\
+latency & 0.4 & Online ID & 0.092 & 0.730 & 0.323 & 0.394 & -0.573\\
+latency & 0.4 & CBF-FTC MPC & 0.069 & 0.794 & 0.432 & 0.412 & -0.671\\
+latency & 0.4 & UKF observer & 0.107 & 0.724 & 0.339 & 0.383 & -0.560\\
+latency & 0.4 & L1 adaptive & 0.064 & 0.778 & 0.398 & 0.375 & -0.648\\
+latency & 0.4 & Belief state v5 & 0.122 & 0.730 & 0.348 & 0.353 & -0.550\\
+latency & 0.4 & Oracle state & 0.142 & 0.724 & 0.346 & 0.339 & -0.527\\
+latency & 0.6 & Domain rand. & 0.069 & 0.749 & 0.361 & 0.706 & -0.683\\
+latency & 0.6 & Online ID & 0.096 & 0.723 & 0.320 & 0.398 & -0.565\\
+latency & 0.6 & CBF-FTC MPC & 0.064 & 0.793 & 0.429 & 0.413 & -0.674\\
+latency & 0.6 & UKF observer & 0.089 & 0.729 & 0.344 & 0.390 & -0.586\\
+latency & 0.6 & L1 adaptive & 0.079 & 0.768 & 0.397 & 0.376 & -0.630\\
+latency & 0.6 & Belief state v5 & 0.144 & 0.728 & 0.353 & 0.353 & -0.530\\
+latency & 0.6 & Oracle state & 0.158 & 0.718 & 0.340 & 0.341 & -0.506\\
+latency & 0.8 & Domain rand. & 0.070 & 0.757 & 0.368 & 0.701 & -0.688\\
+latency & 0.8 & Online ID & 0.099 & 0.732 & 0.342 & 0.393 & -0.578\\
+latency & 0.8 & CBF-FTC MPC & 0.083 & 0.790 & 0.432 & 0.405 & -0.656\\
+latency & 0.8 & UKF observer & 0.096 & 0.731 & 0.343 & 0.384 & -0.580\\
+latency & 0.8 & L1 adaptive & 0.084 & 0.767 & 0.391 & 0.366 & -0.619\\
+latency & 0.8 & Belief state v5 & 0.128 & 0.730 & 0.342 & 0.343 & -0.540\\
+latency & 0.8 & Oracle state & 0.157 & 0.723 & 0.352 & 0.332 & -0.516\\
+latency & 1.0 & Domain rand. & 0.058 & 0.767 & 0.382 & 0.699 & -0.712\\
+latency & 1.0 & Online ID & 0.095 & 0.737 & 0.346 & 0.388 & -0.585\\
+latency & 1.0 & CBF-FTC MPC & 0.065 & 0.801 & 0.439 & 0.398 & -0.681\\
+latency & 1.0 & UKF observer & 0.091 & 0.743 & 0.362 & 0.373 & -0.598\\
+latency & 1.0 & L1 adaptive & 0.087 & 0.773 & 0.399 & 0.358 & -0.621\\
+latency & 1.0 & Belief state v5 & 0.112 & 0.740 & 0.365 & 0.336 & -0.572\\
+latency & 1.0 & Oracle state & 0.141 & 0.732 & 0.365 & 0.321 & -0.540\\
+thermal\_drift & 0.0 & Domain rand. & 0.074 & 0.749 & 0.359 & 0.697 & -0.677\\
+thermal\_drift & 0.0 & Online ID & 0.102 & 0.725 & 0.325 & 0.353 & -0.556\\
+thermal\_drift & 0.0 & CBF-FTC MPC & 0.070 & 0.776 & 0.396 & 0.365 & -0.637\\
+thermal\_drift & 0.0 & UKF observer & 0.102 & 0.723 & 0.343 & 0.334 & -0.561\\
+thermal\_drift & 0.0 & L1 adaptive & 0.079 & 0.768 & 0.395 & 0.318 & -0.619\\
+thermal\_drift & 0.0 & Belief state v5 & 0.123 & 0.722 & 0.328 & 0.295 & -0.525\\
+thermal\_drift & 0.0 & Oracle state & 0.172 & 0.704 & 0.328 & 0.293 & -0.471\\
+thermal\_drift & 0.2 & Domain rand. & 0.070 & 0.755 & 0.374 & 0.689 & -0.689\\
+thermal\_drift & 0.2 & Online ID & 0.083 & 0.729 & 0.337 & 0.350 & -0.580\\
+thermal\_drift & 0.2 & CBF-FTC MPC & 0.068 & 0.779 & 0.413 & 0.363 & -0.648\\
+thermal\_drift & 0.2 & UKF observer & 0.097 & 0.730 & 0.348 & 0.334 & -0.572\\
+thermal\_drift & 0.2 & L1 adaptive & 0.077 & 0.770 & 0.395 & 0.322 & -0.621\\
+thermal\_drift & 0.2 & Belief state v5 & 0.122 & 0.728 & 0.343 & 0.300 & -0.537\\
+thermal\_drift & 0.2 & Oracle state & 0.148 & 0.717 & 0.342 & 0.297 & -0.508\\
+thermal\_drift & 0.4 & Domain rand. & 0.068 & 0.750 & 0.372 & 0.701 & -0.690\\
+thermal\_drift & 0.4 & Online ID & 0.088 & 0.726 & 0.336 & 0.377 & -0.580\\
+thermal\_drift & 0.4 & CBF-FTC MPC & 0.063 & 0.778 & 0.408 & 0.392 & -0.654\\
+thermal\_drift & 0.4 & UKF observer & 0.098 & 0.724 & 0.337 & 0.369 & -0.569\\
+thermal\_drift & 0.4 & L1 adaptive & 0.077 & 0.758 & 0.388 & 0.359 & -0.619\\
+thermal\_drift & 0.4 & Belief state v5 & 0.120 & 0.723 & 0.346 & 0.332 & -0.545\\
+thermal\_drift & 0.4 & Oracle state & 0.163 & 0.714 & 0.338 & 0.326 & -0.495\\
+thermal\_drift & 0.6 & Domain rand. & 0.062 & 0.752 & 0.360 & 0.713 & -0.692\\
+thermal\_drift & 0.6 & Online ID & 0.086 & 0.730 & 0.339 & 0.404 & -0.590\\
+thermal\_drift & 0.6 & CBF-FTC MPC & 0.071 & 0.790 & 0.426 & 0.419 & -0.666\\
+thermal\_drift & 0.6 & UKF observer & 0.099 & 0.735 & 0.342 & 0.395 & -0.578\\
+thermal\_drift & 0.6 & L1 adaptive & 0.086 & 0.765 & 0.385 & 0.384 & -0.616\\
+thermal\_drift & 0.6 & Belief state v5 & 0.108 & 0.729 & 0.341 & 0.363 & -0.560\\
+thermal\_drift & 0.6 & Oracle state & 0.152 & 0.718 & 0.340 & 0.350 & -0.512\\
+thermal\_drift & 0.8 & Domain rand. & 0.061 & 0.754 & 0.368 & 0.721 & -0.699\\
+thermal\_drift & 0.8 & Online ID & 0.084 & 0.731 & 0.338 & 0.438 & -0.597\\
+thermal\_drift & 0.8 & CBF-FTC MPC & 0.073 & 0.790 & 0.425 & 0.461 & -0.670\\
+thermal\_drift & 0.8 & UKF observer & 0.110 & 0.728 & 0.348 & 0.429 & -0.573\\
+thermal\_drift & 0.8 & L1 adaptive & 0.096 & 0.767 & 0.394 & 0.423 & -0.618\\
+thermal\_drift & 0.8 & Belief state v5 & 0.118 & 0.728 & 0.351 & 0.401 & -0.562\\
+thermal\_drift & 0.8 & Oracle state & 0.158 & 0.720 & 0.354 & 0.384 & -0.520\\
+thermal\_drift & 1.0 & Domain rand. & 0.066 & 0.749 & 0.365 & 0.782 & -0.701\\
+thermal\_drift & 1.0 & Online ID & 0.090 & 0.727 & 0.340 & 0.504 & -0.603\\
+thermal\_drift & 1.0 & CBF-FTC MPC & 0.071 & 0.786 & 0.425 & 0.537 & -0.684\\
+thermal\_drift & 1.0 & UKF observer & 0.087 & 0.725 & 0.334 & 0.491 & -0.598\\
+thermal\_drift & 1.0 & L1 adaptive & 0.077 & 0.766 & 0.391 & 0.494 & -0.647\\
+thermal\_drift & 1.0 & Belief state v5 & 0.127 & 0.729 & 0.345 & 0.463 & -0.561\\
+thermal\_drift & 1.0 & Oracle state & 0.163 & 0.721 & 0.349 & 0.435 & -0.522\\
+intermittent\_fault & 0.0 & Domain rand. & 0.062 & 0.749 & 0.362 & 0.687 & -0.686\\
+intermittent\_fault & 0.0 & Online ID & 0.107 & 0.729 & 0.338 & 0.387 & -0.565\\
+intermittent\_fault & 0.0 & CBF-FTC MPC & 0.073 & 0.789 & 0.426 & 0.399 & -0.659\\
+intermittent\_fault & 0.0 & UKF observer & 0.095 & 0.723 & 0.337 & 0.379 & -0.571\\
+intermittent\_fault & 0.0 & L1 adaptive & 0.077 & 0.755 & 0.382 & 0.365 & -0.615\\
+intermittent\_fault & 0.0 & Belief state v5 & 0.128 & 0.720 & 0.338 & 0.349 & -0.533\\
+intermittent\_fault & 0.0 & Oracle state & 0.184 & 0.710 & 0.335 & 0.338 & -0.472\\
+intermittent\_fault & 0.2 & Domain rand. & 0.068 & 0.749 & 0.357 & 0.700 & -0.680\\
+intermittent\_fault & 0.2 & Online ID & 0.092 & 0.722 & 0.321 & 0.391 & -0.568\\
+intermittent\_fault & 0.2 & CBF-FTC MPC & 0.071 & 0.781 & 0.414 & 0.402 & -0.652\\
+intermittent\_fault & 0.2 & UKF observer & 0.112 & 0.723 & 0.337 & 0.378 & -0.555\\
+intermittent\_fault & 0.2 & L1 adaptive & 0.080 & 0.756 & 0.376 & 0.369 & -0.611\\
+intermittent\_fault & 0.2 & Belief state v5 & 0.123 & 0.726 & 0.335 & 0.345 & -0.538\\
+intermittent\_fault & 0.2 & Oracle state & 0.177 & 0.709 & 0.342 & 0.337 & -0.481\\
+intermittent\_fault & 0.4 & Domain rand. & 0.067 & 0.757 & 0.377 & 0.704 & -0.698\\
+intermittent\_fault & 0.4 & Online ID & 0.082 & 0.731 & 0.338 & 0.390 & -0.590\\
+intermittent\_fault & 0.4 & CBF-FTC MPC & 0.077 & 0.792 & 0.436 & 0.412 & -0.666\\
+intermittent\_fault & 0.4 & UKF observer & 0.097 & 0.733 & 0.343 & 0.379 & -0.578\\
+intermittent\_fault & 0.4 & L1 adaptive & 0.079 & 0.770 & 0.392 & 0.371 & -0.627\\
+intermittent\_fault & 0.4 & Belief state v5 & 0.116 & 0.733 & 0.348 & 0.344 & -0.556\\
+intermittent\_fault & 0.4 & Oracle state & 0.168 & 0.716 & 0.343 & 0.333 & -0.495\\
+intermittent\_fault & 0.6 & Domain rand. & 0.062 & 0.744 & 0.362 & 0.700 & -0.688\\
+intermittent\_fault & 0.6 & Online ID & 0.077 & 0.727 & 0.341 & 0.391 & -0.596\\
+intermittent\_fault & 0.6 & CBF-FTC MPC & 0.067 & 0.789 & 0.423 & 0.408 & -0.667\\
+intermittent\_fault & 0.6 & UKF observer & 0.086 & 0.729 & 0.345 & 0.385 & -0.590\\
+intermittent\_fault & 0.6 & L1 adaptive & 0.083 & 0.761 & 0.389 & 0.375 & -0.618\\
+intermittent\_fault & 0.6 & Belief state v5 & 0.126 & 0.733 & 0.355 & 0.351 & -0.551\\
+intermittent\_fault & 0.6 & Oracle state & 0.158 & 0.719 & 0.351 & 0.344 & -0.512\\
+intermittent\_fault & 0.8 & Domain rand. & 0.079 & 0.754 & 0.361 & 0.700 & -0.675\\
+intermittent\_fault & 0.8 & Online ID & 0.082 & 0.734 & 0.341 & 0.396 & -0.596\\
+intermittent\_fault & 0.8 & CBF-FTC MPC & 0.067 & 0.785 & 0.419 & 0.410 & -0.663\\
+intermittent\_fault & 0.8 & UKF observer & 0.102 & 0.725 & 0.333 & 0.387 & -0.565\\
+intermittent\_fault & 0.8 & L1 adaptive & 0.071 & 0.762 & 0.382 & 0.373 & -0.626\\
+intermittent\_fault & 0.8 & Belief state v5 & 0.134 & 0.724 & 0.346 & 0.357 & -0.536\\
+intermittent\_fault & 0.8 & Oracle state & 0.179 & 0.708 & 0.331 & 0.343 & -0.475\\
+intermittent\_fault & 1.0 & Domain rand. & 0.063 & 0.759 & 0.374 & 0.704 & -0.700\\
+intermittent\_fault & 1.0 & Online ID & 0.095 & 0.733 & 0.339 & 0.405 & -0.583\\
+intermittent\_fault & 1.0 & CBF-FTC MPC & 0.061 & 0.782 & 0.418 & 0.421 & -0.669\\
+intermittent\_fault & 1.0 & UKF observer & 0.090 & 0.734 & 0.348 & 0.398 & -0.591\\
+intermittent\_fault & 1.0 & L1 adaptive & 0.079 & 0.766 & 0.392 & 0.384 & -0.627\\
+intermittent\_fault & 1.0 & Belief state v5 & 0.116 & 0.735 & 0.354 & 0.368 & -0.565\\
+intermittent\_fault & 1.0 & Oracle state & 0.162 & 0.723 & 0.355 & 0.361 & -0.516\\
+combined & 0.0 & Domain rand. & 0.148 & 0.643 & 0.199 & 0.076 & -0.330\\
+combined & 0.0 & Online ID & 0.159 & 0.640 & 0.194 & 0.031 & -0.306\\
+combined & 0.0 & CBF-FTC MPC & 0.137 & 0.689 & 0.274 & 0.031 & -0.385\\
+combined & 0.0 & UKF observer & 0.137 & 0.647 & 0.209 & 0.031 & -0.338\\
+combined & 0.0 & L1 adaptive & 0.127 & 0.674 & 0.246 & 0.029 & -0.374\\
+combined & 0.0 & Belief state v5 & 0.178 & 0.656 & 0.223 & 0.029 & -0.307\\
+combined & 0.0 & Oracle state & 0.212 & 0.660 & 0.246 & 0.034 & -0.287\\
+combined & 0.2 & Domain rand. & 0.098 & 0.680 & 0.239 & 0.263 & -0.465\\
+combined & 0.2 & Online ID & 0.115 & 0.660 & 0.220 & 0.140 & -0.402\\
+combined & 0.2 & CBF-FTC MPC & 0.116 & 0.710 & 0.307 & 0.145 & -0.462\\
+combined & 0.2 & UKF observer & 0.130 & 0.666 & 0.232 & 0.141 & -0.396\\
+combined & 0.2 & L1 adaptive & 0.111 & 0.698 & 0.272 & 0.136 & -0.443\\
+combined & 0.2 & Belief state v5 & 0.173 & 0.667 & 0.248 & 0.139 & -0.362\\
+combined & 0.2 & Oracle state & 0.191 & 0.659 & 0.250 & 0.152 & -0.346\\
+combined & 0.4 & Domain rand. & 0.067 & 0.727 & 0.323 & 0.455 & -0.609\\
+combined & 0.4 & Online ID & 0.102 & 0.705 & 0.293 & 0.264 & -0.507\\
+combined & 0.4 & CBF-FTC MPC & 0.084 & 0.763 & 0.393 & 0.272 & -0.595\\
+combined & 0.4 & UKF observer & 0.121 & 0.704 & 0.304 & 0.264 & -0.495\\
+combined & 0.4 & L1 adaptive & 0.094 & 0.737 & 0.344 & 0.254 & -0.546\\
+combined & 0.4 & Belief state v5 & 0.152 & 0.703 & 0.309 & 0.246 & -0.464\\
+combined & 0.4 & Oracle state & 0.190 & 0.690 & 0.309 & 0.245 & -0.423\\
+combined & 0.6 & Domain rand. & 0.062 & 0.759 & 0.382 & 0.654 & -0.700\\
+combined & 0.6 & Online ID & 0.074 & 0.738 & 0.352 & 0.399 & -0.614\\
+combined & 0.6 & CBF-FTC MPC & 0.077 & 0.793 & 0.422 & 0.407 & -0.659\\
+combined & 0.6 & UKF observer & 0.102 & 0.731 & 0.348 & 0.391 & -0.579\\
+combined & 0.6 & L1 adaptive & 0.086 & 0.770 & 0.399 & 0.381 & -0.627\\
+combined & 0.6 & Belief state v5 & 0.131 & 0.730 & 0.351 & 0.354 & -0.546\\
+combined & 0.6 & Oracle state & 0.158 & 0.723 & 0.350 & 0.345 & -0.518\\
+combined & 0.8 & Domain rand. & 0.043 & 0.820 & 0.465 & 0.837 & -0.830\\
+combined & 0.8 & Online ID & 0.065 & 0.793 & 0.429 & 0.526 & -0.718\\
+combined & 0.8 & CBF-FTC MPC & 0.057 & 0.845 & 0.492 & 0.537 & -0.766\\
+combined & 0.8 & UKF observer & 0.076 & 0.782 & 0.419 & 0.513 & -0.693\\
+combined & 0.8 & L1 adaptive & 0.062 & 0.831 & 0.473 & 0.505 & -0.743\\
+combined & 0.8 & Belief state v5 & 0.093 & 0.782 & 0.419 & 0.460 & -0.667\\
+combined & 0.8 & Oracle state & 0.124 & 0.771 & 0.415 & 0.451 & -0.632\\
+combined & 1.0 & Domain rand. & 0.040 & 0.854 & 0.495 & 1.013 & -0.896\\
+combined & 1.0 & Online ID & 0.047 & 0.854 & 0.499 & 0.647 & -0.825\\
+combined & 1.0 & CBF-FTC MPC & 0.045 & 0.885 & 0.526 & 0.656 & -0.835\\
+combined & 1.0 & UKF observer & 0.054 & 0.836 & 0.477 & 0.623 & -0.792\\
+combined & 1.0 & L1 adaptive & 0.053 & 0.877 & 0.525 & 0.615 & -0.821\\
+combined & 1.0 & Belief state v5 & 0.068 & 0.833 & 0.481 & 0.560 & -0.768\\
+combined & 1.0 & Oracle state & 0.099 & 0.817 & 0.466 & 0.552 & -0.725\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\section{Appendix: Complete Fixed-Risk Table}
+The fixed-risk appendix reports every split, budget, and method. The strict budget 0.05 failure is visible in the full table rather than only in the summary.
+\begin{center}
+\tiny
+\begin{longtable}{p{0.14\linewidth}rp{0.25\linewidth}rrrrr}
+\caption{All fixed-risk deployment rows across both hard splits, four budgets, and six methods.}\label{tab:full-fixed}\\
+\toprule
+Split & Budget & Method & Coverage & Succ. & Track. & Safety & Utility\\
+\midrule
+\endfirsthead
+\caption[]{All fixed-risk deployment rows across both hard splits, four budgets, and six methods. (continued)}\\
+\toprule
+Split & Budget & Method & Coverage & Succ. & Track. & Safety & Utility\\
+\midrule
+\endhead
+Combined & 0.02 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Online ID & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Online ID & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Online ID & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Online ID & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Online ID & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Online ID & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Online ID & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & CBF-FTC MPC & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Belief state v5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Online ID & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Oracle state & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & L1 adaptive & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & UKF observer & 0.000 & 0.000 & 0.000 & 0.000 & 0.000\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\section{Appendix: Fixed-Risk Paired Tests}
+The fixed-risk paired table reports coverage and accepted-episode differences across all budgets. It is included because a deployment reviewer would not accept a single budget-only summary.
+\begin{center}
+\tiny
+\begin{longtable}{p{0.13\linewidth}rp{0.22\linewidth}p{0.20\linewidth}rrr}
+\caption{All fixed-risk paired comparisons for belief state v5 minus each non-v5 reference across budgets.}\label{tab:fixed-pairwise}\\
+\toprule
+Split & Budget & Reference & Metric & Mean diff & CI95 & Lower95\\
+\midrule
+\endfirsthead
+\caption[]{All fixed-risk paired comparisons for belief state v5 minus each non-v5 reference across budgets. (continued)}\\
+\toprule
+Split & Budget & Reference & Metric & Mean diff & CI95 & Lower95\\
+\midrule
+\endhead
+Combined & 0.02 & CBF-FTC MPC & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & CBF-FTC MPC & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & CBF-FTC MPC & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & CBF-FTC MPC & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & CBF-FTC MPC & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Online ID & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Online ID & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Online ID & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Online ID & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Online ID & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Oracle state & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Oracle state & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Oracle state & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Oracle state & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & Oracle state & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & L1 adaptive & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & L1 adaptive & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & L1 adaptive & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & L1 adaptive & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & L1 adaptive & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & UKF observer & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & UKF observer & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & UKF observer & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & UKF observer & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.02 & UKF observer & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & CBF-FTC MPC & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & CBF-FTC MPC & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & CBF-FTC MPC & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & CBF-FTC MPC & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & CBF-FTC MPC & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Online ID & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Online ID & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Online ID & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Online ID & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Online ID & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Oracle state & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Oracle state & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Oracle state & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Oracle state & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & Oracle state & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & L1 adaptive & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & L1 adaptive & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & L1 adaptive & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & L1 adaptive & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & L1 adaptive & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & UKF observer & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & UKF observer & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & UKF observer & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & UKF observer & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.05 & UKF observer & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & CBF-FTC MPC & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & CBF-FTC MPC & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & CBF-FTC MPC & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & CBF-FTC MPC & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & CBF-FTC MPC & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Online ID & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Online ID & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Online ID & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Online ID & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Online ID & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Oracle state & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Oracle state & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Oracle state & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Oracle state & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & Oracle state & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & L1 adaptive & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & L1 adaptive & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & L1 adaptive & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & L1 adaptive & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & L1 adaptive & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & UKF observer & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & UKF observer & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & UKF observer & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & UKF observer & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.08 & UKF observer & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & CBF-FTC MPC & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & CBF-FTC MPC & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & CBF-FTC MPC & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & CBF-FTC MPC & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & CBF-FTC MPC & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Online ID & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Online ID & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Online ID & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Online ID & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Online ID & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Oracle state & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Oracle state & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Oracle state & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Oracle state & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & Oracle state & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & L1 adaptive & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & L1 adaptive & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & L1 adaptive & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & L1 adaptive & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & L1 adaptive & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & UKF observer & coverage & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & UKF observer & accepted\_success & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & UKF observer & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & UKF observer & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Combined & 0.10 & UKF observer & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & CBF-FTC MPC & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & CBF-FTC MPC & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & CBF-FTC MPC & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & CBF-FTC MPC & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & CBF-FTC MPC & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Online ID & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Online ID & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Online ID & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Online ID & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Online ID & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Oracle state & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Oracle state & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Oracle state & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Oracle state & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & Oracle state & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & L1 adaptive & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & L1 adaptive & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & L1 adaptive & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & L1 adaptive & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & L1 adaptive & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & UKF observer & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & UKF observer & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & UKF observer & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & UKF observer & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.02 & UKF observer & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & CBF-FTC MPC & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & CBF-FTC MPC & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & CBF-FTC MPC & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & CBF-FTC MPC & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & CBF-FTC MPC & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Online ID & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Online ID & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Online ID & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Online ID & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Online ID & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Oracle state & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Oracle state & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Oracle state & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Oracle state & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & Oracle state & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & L1 adaptive & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & L1 adaptive & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & L1 adaptive & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & L1 adaptive & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & L1 adaptive & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & UKF observer & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & UKF observer & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & UKF observer & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & UKF observer & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.05 & UKF observer & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & CBF-FTC MPC & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & CBF-FTC MPC & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & CBF-FTC MPC & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & CBF-FTC MPC & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & CBF-FTC MPC & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Online ID & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Online ID & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Online ID & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Online ID & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Online ID & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Oracle state & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Oracle state & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Oracle state & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Oracle state & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & Oracle state & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & L1 adaptive & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & L1 adaptive & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & L1 adaptive & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & L1 adaptive & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & L1 adaptive & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & UKF observer & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & UKF observer & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & UKF observer & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & UKF observer & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.08 & UKF observer & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & CBF-FTC MPC & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & CBF-FTC MPC & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & CBF-FTC MPC & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & CBF-FTC MPC & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & CBF-FTC MPC & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Online ID & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Online ID & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Online ID & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Online ID & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Online ID & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Oracle state & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Oracle state & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Oracle state & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Oracle state & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & Oracle state & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & L1 adaptive & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & L1 adaptive & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & L1 adaptive & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & L1 adaptive & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & L1 adaptive & accepted\_utility & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & UKF observer & coverage & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & UKF observer & accepted\_success & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & UKF observer & accepted\_tracking\_error & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & UKF observer & accepted\_safety & 0.000 & 0.000 & 0.000\\
+Payload/contact & 0.10 & UKF observer & accepted\_utility & 0.000 & 0.000 & 0.000\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\section{Appendix: Ablation Seed Units}
+The mechanism gate was evaluated on seed means from payload/contact and combined hard shift. The full mechanism does not achieve the required clean robust-utility margin over all ablations.
+\begin{center}
+\tiny
+\begin{longtable}{p{0.13\linewidth}p{0.34\linewidth}rrrrr}
+\caption{Ablation seed means for the two hard ablation splits.}\label{tab:ablation-seed}\\
+\toprule
+Split & Ablation & Seed & Success & Tracking & Safety & Utility\\
+\midrule
+\endfirsthead
+\caption[]{Ablation seed means for the two hard ablation splits. (continued)}\\
+\toprule
+Split & Ablation & Seed & Success & Tracking & Safety & Utility\\
+\midrule
+\endhead
+Combined & Full belief v5 & 0 & 0.083 & 0.735 & 0.341 & -0.590\\
+Combined & Full belief v5 & 1 & 0.131 & 0.730 & 0.344 & -0.534\\
+Combined & Full belief v5 & 2 & 0.131 & 0.707 & 0.319 & -0.508\\
+Combined & Full belief v5 & 3 & 0.119 & 0.730 & 0.346 & -0.551\\
+Combined & Full belief v5 & 4 & 0.107 & 0.731 & 0.365 & -0.574\\
+Combined & Full belief v5 & 5 & 0.083 & 0.715 & 0.332 & -0.575\\
+Combined & Full belief v5 & 6 & 0.143 & 0.698 & 0.286 & -0.479\\
+Combined & Full belief v5 & 7 & 0.125 & 0.751 & 0.387 & -0.573\\
+Combined & Full belief v5 & 8 & 0.125 & 0.753 & 0.379 & -0.576\\
+Combined & Full belief v5 & 9 & 0.125 & 0.741 & 0.372 & -0.561\\
+Combined & - deadzone/sat. state & 0 & 0.048 & 0.766 & 0.374 & -0.652\\
+Combined & - deadzone/sat. state & 1 & 0.077 & 0.755 & 0.360 & -0.603\\
+Combined & - deadzone/sat. state & 2 & 0.095 & 0.729 & 0.353 & -0.568\\
+Combined & - deadzone/sat. state & 3 & 0.077 & 0.751 & 0.372 & -0.611\\
+Combined & - deadzone/sat. state & 4 & 0.071 & 0.772 & 0.399 & -0.642\\
+Combined & - deadzone/sat. state & 5 & 0.077 & 0.743 & 0.347 & -0.596\\
+Combined & - deadzone/sat. state & 6 & 0.113 & 0.726 & 0.326 & -0.533\\
+Combined & - deadzone/sat. state & 7 & 0.065 & 0.760 & 0.385 & -0.628\\
+Combined & - deadzone/sat. state & 8 & 0.089 & 0.773 & 0.396 & -0.621\\
+Combined & - deadzone/sat. state & 9 & 0.107 & 0.745 & 0.390 & -0.583\\
+Combined & - latency comp. & 0 & 0.089 & 0.730 & 0.336 & -0.581\\
+Combined & - latency comp. & 1 & 0.119 & 0.733 & 0.351 & -0.551\\
+Combined & - latency comp. & 2 & 0.095 & 0.716 & 0.337 & -0.559\\
+Combined & - latency comp. & 3 & 0.065 & 0.747 & 0.365 & -0.624\\
+Combined & - latency comp. & 4 & 0.107 & 0.748 & 0.386 & -0.592\\
+Combined & - latency comp. & 5 & 0.071 & 0.736 & 0.335 & -0.599\\
+Combined & - latency comp. & 6 & 0.101 & 0.741 & 0.347 & -0.571\\
+Combined & - latency comp. & 7 & 0.107 & 0.734 & 0.349 & -0.560\\
+Combined & - latency comp. & 8 & 0.095 & 0.753 & 0.370 & -0.602\\
+Combined & - latency comp. & 9 & 0.131 & 0.741 & 0.378 & -0.559\\
+Combined & - residual update & 0 & 0.077 & 0.748 & 0.372 & -0.624\\
+Combined & - residual update & 1 & 0.125 & 0.727 & 0.332 & -0.542\\
+Combined & - residual update & 2 & 0.071 & 0.723 & 0.345 & -0.599\\
+Combined & - residual update & 3 & 0.065 & 0.738 & 0.364 & -0.623\\
+Combined & - residual update & 4 & 0.077 & 0.753 & 0.386 & -0.633\\
+Combined & - residual update & 5 & 0.077 & 0.739 & 0.355 & -0.611\\
+Combined & - residual update & 6 & 0.071 & 0.740 & 0.349 & -0.610\\
+Combined & - residual update & 7 & 0.107 & 0.751 & 0.386 & -0.599\\
+Combined & - residual update & 8 & 0.054 & 0.729 & 0.334 & -0.617\\
+Combined & - residual update & 9 & 0.089 & 0.740 & 0.373 & -0.606\\
+Combined & - persistent memory & 0 & 0.071 & 0.764 & 0.415 & -0.659\\
+Combined & - persistent memory & 1 & 0.083 & 0.739 & 0.357 & -0.601\\
+Combined & - persistent memory & 2 & 0.101 & 0.720 & 0.345 & -0.567\\
+Combined & - persistent memory & 3 & 0.101 & 0.748 & 0.364 & -0.591\\
+Combined & - persistent memory & 4 & 0.065 & 0.763 & 0.404 & -0.655\\
+Combined & - persistent memory & 5 & 0.083 & 0.731 & 0.346 & -0.594\\
+Combined & - persistent memory & 6 & 0.089 & 0.734 & 0.355 & -0.591\\
+Combined & - persistent memory & 7 & 0.071 & 0.759 & 0.380 & -0.633\\
+Combined & - persistent memory & 8 & 0.119 & 0.743 & 0.355 & -0.567\\
+Combined & - persistent memory & 9 & 0.071 & 0.748 & 0.371 & -0.623\\
+Combined & - safety clipping & 0 & 0.089 & 0.682 & 0.448 & -0.641\\
+Combined & - safety clipping & 1 & 0.119 & 0.664 & 0.392 & -0.566\\
+Combined & - safety clipping & 2 & 0.125 & 0.667 & 0.417 & -0.575\\
+Combined & - safety clipping & 3 & 0.060 & 0.690 & 0.423 & -0.657\\
+Combined & - safety clipping & 4 & 0.095 & 0.691 & 0.468 & -0.646\\
+Combined & - safety clipping & 5 & 0.125 & 0.682 & 0.419 & -0.589\\
+Combined & - safety clipping & 6 & 0.095 & 0.694 & 0.450 & -0.637\\
+Combined & - safety clipping & 7 & 0.131 & 0.672 & 0.409 & -0.563\\
+Combined & - safety clipping & 8 & 0.113 & 0.671 & 0.427 & -0.601\\
+Combined & - safety clipping & 9 & 0.101 & 0.694 & 0.477 & -0.647\\
+Combined & - sign-specific asym. & 0 & 0.077 & 0.768 & 0.390 & -0.634\\
+Combined & - sign-specific asym. & 1 & 0.095 & 0.744 & 0.352 & -0.577\\
+Combined & - sign-specific asym. & 2 & 0.065 & 0.742 & 0.358 & -0.607\\
+Combined & - sign-specific asym. & 3 & 0.095 & 0.746 & 0.387 & -0.599\\
+Combined & - sign-specific asym. & 4 & 0.083 & 0.790 & 0.448 & -0.666\\
+Combined & - sign-specific asym. & 5 & 0.089 & 0.743 & 0.361 & -0.590\\
+Combined & - sign-specific asym. & 6 & 0.077 & 0.735 & 0.342 & -0.586\\
+Combined & - sign-specific asym. & 7 & 0.071 & 0.757 & 0.369 & -0.614\\
+Combined & - sign-specific asym. & 8 & 0.107 & 0.759 & 0.369 & -0.585\\
+Combined & - sign-specific asym. & 9 & 0.095 & 0.737 & 0.383 & -0.591\\
+Combined & - drift update & 0 & 0.113 & 0.738 & 0.371 & -0.577\\
+Combined & - drift update & 1 & 0.137 & 0.711 & 0.334 & -0.512\\
+Combined & - drift update & 2 & 0.101 & 0.707 & 0.315 & -0.539\\
+Combined & - drift update & 3 & 0.155 & 0.713 & 0.335 & -0.499\\
+Combined & - drift update & 4 & 0.101 & 0.751 & 0.385 & -0.598\\
+Combined & - drift update & 5 & 0.107 & 0.709 & 0.326 & -0.544\\
+Combined & - drift update & 6 & 0.077 & 0.729 & 0.354 & -0.594\\
+Combined & - drift update & 7 & 0.083 & 0.749 & 0.381 & -0.611\\
+Combined & - drift update & 8 & 0.101 & 0.736 & 0.365 & -0.584\\
+Combined & - drift update & 9 & 0.107 & 0.732 & 0.358 & -0.568\\
+Combined & No belief uncertainty & 0 & 0.083 & 0.730 & 0.365 & -0.602\\
+Combined & No belief uncertainty & 1 & 0.101 & 0.725 & 0.332 & -0.556\\
+Combined & No belief uncertainty & 2 & 0.137 & 0.695 & 0.335 & -0.507\\
+Combined & No belief uncertainty & 3 & 0.125 & 0.722 & 0.344 & -0.541\\
+Combined & No belief uncertainty & 4 & 0.143 & 0.757 & 0.411 & -0.573\\
+Combined & No belief uncertainty & 5 & 0.089 & 0.739 & 0.350 & -0.590\\
+Combined & No belief uncertainty & 6 & 0.083 & 0.721 & 0.324 & -0.570\\
+Combined & No belief uncertainty & 7 & 0.089 & 0.732 & 0.349 & -0.580\\
+Combined & No belief uncertainty & 8 & 0.131 & 0.743 & 0.364 & -0.558\\
+Combined & No belief uncertainty & 9 & 0.113 & 0.729 & 0.383 & -0.577\\
+Combined & Scalar-only latent gain & 0 & 0.083 & 0.756 & 0.391 & -0.622\\
+Combined & Scalar-only latent gain & 1 & 0.065 & 0.752 & 0.365 & -0.617\\
+Combined & Scalar-only latent gain & 2 & 0.107 & 0.741 & 0.373 & -0.576\\
+Combined & Scalar-only latent gain & 3 & 0.095 & 0.755 & 0.362 & -0.587\\
+Combined & Scalar-only latent gain & 4 & 0.089 & 0.763 & 0.397 & -0.622\\
+Combined & Scalar-only latent gain & 5 & 0.065 & 0.760 & 0.375 & -0.629\\
+Combined & Scalar-only latent gain & 6 & 0.095 & 0.754 & 0.362 & -0.588\\
+Combined & Scalar-only latent gain & 7 & 0.065 & 0.753 & 0.372 & -0.621\\
+Combined & Scalar-only latent gain & 8 & 0.089 & 0.755 & 0.365 & -0.598\\
+Combined & Scalar-only latent gain & 9 & 0.048 & 0.766 & 0.404 & -0.662\\
+Payload/contact & Full belief v5 & 0 & 0.077 & 0.735 & 0.370 & -0.574\\
+Payload/contact & Full belief v5 & 1 & 0.185 & 0.682 & 0.285 & -0.396\\
+Payload/contact & Full belief v5 & 2 & 0.190 & 0.695 & 0.312 & -0.409\\
+Payload/contact & Full belief v5 & 3 & 0.149 & 0.698 & 0.310 & -0.451\\
+Payload/contact & Full belief v5 & 4 & 0.107 & 0.704 & 0.294 & -0.491\\
+Payload/contact & Full belief v5 & 5 & 0.143 & 0.683 & 0.279 & -0.432\\
+Payload/contact & Full belief v5 & 6 & 0.149 & 0.703 & 0.291 & -0.447\\
+Payload/contact & Full belief v5 & 7 & 0.196 & 0.679 & 0.280 & -0.379\\
+Payload/contact & Full belief v5 & 8 & 0.161 & 0.671 & 0.263 & -0.401\\
+Payload/contact & Full belief v5 & 9 & 0.137 & 0.658 & 0.232 & -0.404\\
+Payload/contact & - deadzone/sat. state & 0 & 0.083 & 0.746 & 0.359 & -0.564\\
+Payload/contact & - deadzone/sat. state & 1 & 0.119 & 0.689 & 0.276 & -0.448\\
+Payload/contact & - deadzone/sat. state & 2 & 0.095 & 0.733 & 0.344 & -0.529\\
+Payload/contact & - deadzone/sat. state & 3 & 0.113 & 0.692 & 0.294 & -0.468\\
+Payload/contact & - deadzone/sat. state & 4 & 0.119 & 0.733 & 0.348 & -0.511\\
+Payload/contact & - deadzone/sat. state & 5 & 0.131 & 0.712 & 0.314 & -0.473\\
+Payload/contact & - deadzone/sat. state & 6 & 0.083 & 0.723 & 0.332 & -0.539\\
+Payload/contact & - deadzone/sat. state & 7 & 0.131 & 0.706 & 0.304 & -0.464\\
+Payload/contact & - deadzone/sat. state & 8 & 0.125 & 0.697 & 0.278 & -0.448\\
+Payload/contact & - deadzone/sat. state & 9 & 0.149 & 0.688 & 0.261 & -0.415\\
+Payload/contact & - latency comp. & 0 & 0.113 & 0.732 & 0.355 & -0.529\\
+Payload/contact & - latency comp. & 1 & 0.125 & 0.689 & 0.298 & -0.463\\
+Payload/contact & - latency comp. & 2 & 0.101 & 0.702 & 0.297 & -0.491\\
+Payload/contact & - latency comp. & 3 & 0.095 & 0.688 & 0.280 & -0.482\\
+Payload/contact & - latency comp. & 4 & 0.131 & 0.720 & 0.337 & -0.494\\
+Payload/contact & - latency comp. & 5 & 0.155 & 0.691 & 0.290 & -0.431\\
+Payload/contact & - latency comp. & 6 & 0.113 & 0.708 & 0.310 & -0.494\\
+Payload/contact & - latency comp. & 7 & 0.143 & 0.667 & 0.264 & -0.417\\
+Payload/contact & - latency comp. & 8 & 0.161 & 0.666 & 0.271 & -0.401\\
+Payload/contact & - latency comp. & 9 & 0.113 & 0.670 & 0.252 & -0.441\\
+Payload/contact & - residual update & 0 & 0.065 & 0.726 & 0.357 & -0.584\\
+Payload/contact & - residual update & 1 & 0.131 & 0.685 & 0.288 & -0.457\\
+Payload/contact & - residual update & 2 & 0.131 & 0.712 & 0.308 & -0.480\\
+Payload/contact & - residual update & 3 & 0.167 & 0.683 & 0.297 & -0.425\\
+Payload/contact & - residual update & 4 & 0.101 & 0.719 & 0.314 & -0.517\\
+Payload/contact & - residual update & 5 & 0.048 & 0.698 & 0.304 & -0.557\\
+Payload/contact & - residual update & 6 & 0.077 & 0.713 & 0.287 & -0.528\\
+Payload/contact & - residual update & 7 & 0.101 & 0.680 & 0.286 & -0.484\\
+Payload/contact & - residual update & 8 & 0.083 & 0.684 & 0.281 & -0.501\\
+Payload/contact & - residual update & 9 & 0.149 & 0.675 & 0.274 & -0.430\\
+Payload/contact & - persistent memory & 0 & 0.107 & 0.727 & 0.336 & -0.531\\
+Payload/contact & - persistent memory & 1 & 0.113 & 0.711 & 0.321 & -0.506\\
+Payload/contact & - persistent memory & 2 & 0.131 & 0.707 & 0.320 & -0.483\\
+Payload/contact & - persistent memory & 3 & 0.095 & 0.708 & 0.304 & -0.509\\
+Payload/contact & - persistent memory & 4 & 0.101 & 0.697 & 0.286 & -0.492\\
+Payload/contact & - persistent memory & 5 & 0.137 & 0.692 & 0.300 & -0.461\\
+Payload/contact & - persistent memory & 6 & 0.119 & 0.698 & 0.287 & -0.476\\
+Payload/contact & - persistent memory & 7 & 0.137 & 0.657 & 0.262 & -0.423\\
+Payload/contact & - persistent memory & 8 & 0.089 & 0.673 & 0.258 & -0.476\\
+Payload/contact & - persistent memory & 9 & 0.161 & 0.668 & 0.252 & -0.402\\
+Payload/contact & - safety clipping & 0 & 0.155 & 0.659 & 0.295 & -0.434\\
+Payload/contact & - safety clipping & 1 & 0.137 & 0.647 & 0.262 & -0.425\\
+Payload/contact & - safety clipping & 2 & 0.208 & 0.654 & 0.254 & -0.350\\
+Payload/contact & - safety clipping & 3 & 0.173 & 0.648 & 0.250 & -0.382\\
+Payload/contact & - safety clipping & 4 & 0.089 & 0.670 & 0.293 & -0.502\\
+Payload/contact & - safety clipping & 5 & 0.190 & 0.666 & 0.287 & -0.393\\
+Payload/contact & - safety clipping & 6 & 0.155 & 0.655 & 0.261 & -0.415\\
+Payload/contact & - safety clipping & 7 & 0.173 & 0.631 & 0.221 & -0.358\\
+Payload/contact & - safety clipping & 8 & 0.149 & 0.637 & 0.222 & -0.384\\
+Payload/contact & - safety clipping & 9 & 0.167 & 0.635 & 0.218 & -0.366\\
+Payload/contact & - sign-specific asym. & 0 & 0.089 & 0.734 & 0.351 & -0.547\\
+Payload/contact & - sign-specific asym. & 1 & 0.125 & 0.681 & 0.269 & -0.436\\
+Payload/contact & - sign-specific asym. & 2 & 0.054 & 0.725 & 0.340 & -0.566\\
+Payload/contact & - sign-specific asym. & 3 & 0.119 & 0.701 & 0.294 & -0.467\\
+Payload/contact & - sign-specific asym. & 4 & 0.083 & 0.718 & 0.320 & -0.525\\
+Payload/contact & - sign-specific asym. & 5 & 0.125 & 0.700 & 0.316 & -0.475\\
+Payload/contact & - sign-specific asym. & 6 & 0.060 & 0.725 & 0.330 & -0.563\\
+Payload/contact & - sign-specific asym. & 7 & 0.161 & 0.697 & 0.302 & -0.430\\
+Payload/contact & - sign-specific asym. & 8 & 0.095 & 0.691 & 0.280 & -0.479\\
+Payload/contact & - sign-specific asym. & 9 & 0.119 & 0.680 & 0.251 & -0.436\\
+Payload/contact & - drift update & 0 & 0.125 & 0.724 & 0.336 & -0.502\\
+Payload/contact & - drift update & 1 & 0.113 & 0.686 & 0.284 & -0.468\\
+Payload/contact & - drift update & 2 & 0.119 & 0.689 & 0.303 & -0.470\\
+Payload/contact & - drift update & 3 & 0.107 & 0.680 & 0.287 & -0.469\\
+Payload/contact & - drift update & 4 & 0.143 & 0.706 & 0.320 & -0.465\\
+Payload/contact & - drift update & 5 & 0.107 & 0.710 & 0.327 & -0.506\\
+Payload/contact & - drift update & 6 & 0.089 & 0.706 & 0.299 & -0.509\\
+Payload/contact & - drift update & 7 & 0.149 & 0.679 & 0.267 & -0.420\\
+Payload/contact & - drift update & 8 & 0.113 & 0.682 & 0.272 & -0.461\\
+Payload/contact & - drift update & 9 & 0.137 & 0.659 & 0.239 & -0.408\\
+Payload/contact & No belief uncertainty & 0 & 0.077 & 0.725 & 0.359 & -0.567\\
+Payload/contact & No belief uncertainty & 1 & 0.107 & 0.687 & 0.287 & -0.477\\
+Payload/contact & No belief uncertainty & 2 & 0.173 & 0.691 & 0.301 & -0.418\\
+Payload/contact & No belief uncertainty & 3 & 0.131 & 0.682 & 0.291 & -0.451\\
+Payload/contact & No belief uncertainty & 4 & 0.107 & 0.701 & 0.312 & -0.497\\
+Payload/contact & No belief uncertainty & 5 & 0.155 & 0.698 & 0.299 & -0.438\\
+Payload/contact & No belief uncertainty & 6 & 0.119 & 0.702 & 0.309 & -0.486\\
+Payload/contact & No belief uncertainty & 7 & 0.173 & 0.683 & 0.265 & -0.399\\
+Payload/contact & No belief uncertainty & 8 & 0.155 & 0.676 & 0.282 & -0.421\\
+Payload/contact & No belief uncertainty & 9 & 0.143 & 0.666 & 0.246 & -0.409\\
+Payload/contact & Scalar-only latent gain & 0 & 0.083 & 0.744 & 0.370 & -0.570\\
+Payload/contact & Scalar-only latent gain & 1 & 0.089 & 0.705 & 0.301 & -0.502\\
+Payload/contact & Scalar-only latent gain & 2 & 0.101 & 0.728 & 0.340 & -0.519\\
+Payload/contact & Scalar-only latent gain & 3 & 0.089 & 0.704 & 0.284 & -0.491\\
+Payload/contact & Scalar-only latent gain & 4 & 0.101 & 0.761 & 0.362 & -0.547\\
+Payload/contact & Scalar-only latent gain & 5 & 0.083 & 0.716 & 0.306 & -0.518\\
+Payload/contact & Scalar-only latent gain & 6 & 0.083 & 0.722 & 0.305 & -0.524\\
+Payload/contact & Scalar-only latent gain & 7 & 0.125 & 0.700 & 0.300 & -0.465\\
+Payload/contact & Scalar-only latent gain & 8 & 0.113 & 0.686 & 0.293 & -0.465\\
+Payload/contact & Scalar-only latent gain & 9 & 0.125 & 0.680 & 0.276 & -0.442\\
+\bottomrule
+\end{longtable}
+\normalsize
+\end{center}
+\bibliographystyle{iclr2026_conference}
+\bibliography{references}
 \end{document}
