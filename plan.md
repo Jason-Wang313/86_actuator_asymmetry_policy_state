@@ -1,11 +1,21 @@
 # Plan
 
-Paper 86 `actuator_asymmetry_policy_state` is in the 2026-06-15 ICLR-main submission-readiness audit pass.
+Paper 86 `actuator_asymmetry_policy_state` completed the frozen v5 expanded ICLR-main submission-readiness audit.
 
-Execution plan:
+Executed plan:
 
-1. Rerun the full deterministic actuator-asymmetry benchmark from source.
-2. Audit all main, ablation, stress, pairwise, and negative-case outputs.
-3. Apply the ICLR-main evidence gate without overclaiming local synthetic evidence.
-4. Preserve the terminal decision as `KILL_ARCHIVE` unless latent asymmetry state decisively improves success, tracking, and safety against system-ID/MPC baselines and ablations validate the mechanism.
-5. Rebuild `C:/Users/wangz/Downloads/86.pdf` only, update root reports, commit, push, and verify the public GitHub repo.
+1. Preserve a frozen plan before edits: `docs/paper86_expanded_submission_plan_20260621.md`.
+2. Expand the local benchmark to ten seeds, six tasks, eight actuator-shift splits, thirteen main methods, ten ablations, six stress axes, four fixed-risk budgets, and negative cases.
+3. Keep the runner CPU-only and RAM-light by streaming raw CSVs and aggregating seed metrics.
+4. Apply the hostile-review gate without optimizing for pretty results.
+5. Generate a 25+ page manuscript with theory, full appendices, figures, and bright boxed clickable citations.
+6. Write the canonical numbered PDF to `C:/Users/wangz/Downloads/86.pdf` only.
+7. Validate exact row counts, LaTeX/citation state, page count, SHA256 match, and Desktop absence with `scripts/validate_submission_artifacts.py`.
+
+Outcome:
+
+- Terminal decision: `KILL_ARCHIVE`.
+- PDF: `C:/Users/wangz/Downloads/86.pdf`.
+- Pages: `29`.
+- SHA256: `B9BCA5A27CD6F5B14032E146AEC84D75B035C245131D777057B44089495BF826`.
+- Main blocker: success improves over v4, but tracking, safety, mechanism, fixed-risk, and scope gates fail.

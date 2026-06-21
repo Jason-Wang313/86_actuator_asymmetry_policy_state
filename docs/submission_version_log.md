@@ -29,3 +29,14 @@
 - Re-ran `python src\run_experiment.py` from source and reproduced `terminal=KILL_ARCHIVE`.
 - Verified 40,320 main rollouts, 7,056 ablation rollouts, 100,800 stress rollouts, seven seeds, eight methods, seven ablations, five stress axes, four tasks, and four negative cases.
 - Preserved the terminal decision because the local mechanism signal is not enough without safety dominance or external validation.
+
+## v5 - Expanded Submission-Readiness Audit
+- Created the frozen v5 execution plan before edits: `docs/paper86_expanded_submission_plan_20260621.md`.
+- Expanded the benchmark to ten seeds, six tasks, eight splits, thirteen main methods, ten ablations, six stress axes, four fixed-risk budgets, and 24 negative cases.
+- Re-ran `python src\run_experiment.py` from source and regenerated 199,680 main rollouts, 15,360 actuator summaries, 33,600 ablation rollouts, 302,400 stress rows, and 69,120 fixed-risk rows.
+- Added `scripts/generate_manuscript.py` and `scripts/validate_submission_artifacts.py`.
+- Rebuilt `paper/main.tex`, `paper/references.bib`, and the canonical Downloads PDF with bright green boxed citations.
+- Validator passed: `C:/Users/wangz/Downloads/86.pdf`, 29 pages, SHA256 `B9BCA5A27CD6F5B14032E146AEC84D75B035C245131D777057B44089495BF826`.
+- Visual PDF QA passed on title, main-result, prior-work/citation, appendix, and bibliography pages.
+- Preserved the terminal decision because v5 improves hard-aggregate success but fails tracking, safety, mechanism, fixed-risk, and scope gates.
+- Terminal decision: KILL_ARCHIVE.

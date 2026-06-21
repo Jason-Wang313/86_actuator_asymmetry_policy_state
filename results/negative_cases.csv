@@ -1,5 +1,25 @@
-case,expected_behavior,observed_outcome,lesson
-complete_actuator_failure,latent asymmetry should trigger safe stop,policy state helps only for partial asymmetry,fault diagnosis is separate from asymmetry adaptation
-sensor_bias_mimics_asymmetry,separate actuator asymmetry from state-estimation bias,latent state can absorb sensor bias incorrectly,needs joint observer over sensing and actuation
-contact_slip_dominates,do not blame actuator asymmetry for external slip,asymmetry model overcompensates under unmodeled contact,contact mode must be represented separately
-rapidly_switching_fault,persistent latent state should adapt without lag,memory becomes harmful for sign-flipping asymmetry,state persistence should be gated by change detection
+case_id,case_family,expected_behavior,observed_failure_mode,terminal_lesson
+complete_actuator_failure_0,complete_actuator_failure,latent asymmetry should trigger safe stop,variant 0: policy state helps only for partial asymmetry,fault diagnosis is separate from adaptation
+complete_actuator_failure_1,complete_actuator_failure,latent asymmetry should trigger safe stop,variant 1: policy state helps only for partial asymmetry,fault diagnosis is separate from adaptation
+complete_actuator_failure_2,complete_actuator_failure,latent asymmetry should trigger safe stop,variant 2: policy state helps only for partial asymmetry,fault diagnosis is separate from adaptation
+complete_actuator_failure_3,complete_actuator_failure,latent asymmetry should trigger safe stop,variant 3: policy state helps only for partial asymmetry,fault diagnosis is separate from adaptation
+sensor_bias_mimics_asymmetry_0,sensor_bias_mimics_asymmetry,separate actuator asymmetry from state-estimation bias,variant 0: latent state can absorb sensor bias incorrectly,needs joint sensing-actuation observer
+sensor_bias_mimics_asymmetry_1,sensor_bias_mimics_asymmetry,separate actuator asymmetry from state-estimation bias,variant 1: latent state can absorb sensor bias incorrectly,needs joint sensing-actuation observer
+sensor_bias_mimics_asymmetry_2,sensor_bias_mimics_asymmetry,separate actuator asymmetry from state-estimation bias,variant 2: latent state can absorb sensor bias incorrectly,needs joint sensing-actuation observer
+sensor_bias_mimics_asymmetry_3,sensor_bias_mimics_asymmetry,separate actuator asymmetry from state-estimation bias,variant 3: latent state can absorb sensor bias incorrectly,needs joint sensing-actuation observer
+contact_slip_dominates_0,contact_slip_dominates,do not blame actuator asymmetry for external slip,variant 0: asymmetry model overcompensates under contact slip,contact mode must be represented
+contact_slip_dominates_1,contact_slip_dominates,do not blame actuator asymmetry for external slip,variant 1: asymmetry model overcompensates under contact slip,contact mode must be represented
+contact_slip_dominates_2,contact_slip_dominates,do not blame actuator asymmetry for external slip,variant 2: asymmetry model overcompensates under contact slip,contact mode must be represented
+contact_slip_dominates_3,contact_slip_dominates,do not blame actuator asymmetry for external slip,variant 3: asymmetry model overcompensates under contact slip,contact mode must be represented
+rapidly_switching_fault_0,rapidly_switching_fault,persistent latent state should adapt without lag,variant 0: memory becomes harmful for sign-flipping asymmetry,persistence must be gated by change detection
+rapidly_switching_fault_1,rapidly_switching_fault,persistent latent state should adapt without lag,variant 1: memory becomes harmful for sign-flipping asymmetry,persistence must be gated by change detection
+rapidly_switching_fault_2,rapidly_switching_fault,persistent latent state should adapt without lag,variant 2: memory becomes harmful for sign-flipping asymmetry,persistence must be gated by change detection
+rapidly_switching_fault_3,rapidly_switching_fault,persistent latent state should adapt without lag,variant 3: memory becomes harmful for sign-flipping asymmetry,persistence must be gated by change detection
+payload_outside_family_0,payload_outside_family,payload shift should be separated from actuator fault,variant 0: belief state mixes payload and actuator asymmetry,state family is incomplete
+payload_outside_family_1,payload_outside_family,payload shift should be separated from actuator fault,variant 1: belief state mixes payload and actuator asymmetry,state family is incomplete
+payload_outside_family_2,payload_outside_family,payload shift should be separated from actuator fault,variant 2: belief state mixes payload and actuator asymmetry,state family is incomplete
+payload_outside_family_3,payload_outside_family,payload shift should be separated from actuator fault,variant 3: belief state mixes payload and actuator asymmetry,state family is incomplete
+latency_instability_0,latency_instability,correct gain estimate should not destabilize delayed control,variant 0: latency compensation can under-damp when delay spikes,delay is a first-class state
+latency_instability_1,latency_instability,correct gain estimate should not destabilize delayed control,variant 1: latency compensation can under-damp when delay spikes,delay is a first-class state
+latency_instability_2,latency_instability,correct gain estimate should not destabilize delayed control,variant 2: latency compensation can under-damp when delay spikes,delay is a first-class state
+latency_instability_3,latency_instability,correct gain estimate should not destabilize delayed control,variant 3: latency compensation can under-damp when delay spikes,delay is a first-class state

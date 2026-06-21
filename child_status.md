@@ -1,11 +1,13 @@
 # Child Status 86
 
-Current stage: ICLR main v4 evidence audit terminal
-Last update: 2026-06-15 09:52:18 +01:00
+Current stage: ICLR main v5 expanded submission-readiness audit terminal
+Last update: 2026-06-22 00:42 +08:00
 PDF: C:/Users/wangz/Downloads/86.pdf
+PDF pages: 29
+PDF SHA256: B9BCA5A27CD6F5B14032E146AEC84D75B035C245131D777057B44089495BF826
 GitHub: https://github.com/Jason-Wang313/86_actuator_asymmetry_policy_state
-Submission-hardening version: v4
+Submission-hardening version: v5 expanded
 Terminal decision: KILL_ARCHIVE
 ICLR main ready: no
 
-Reason: the 2026-06-15 full rerun regenerated 40,320 main rollouts, 7,056 ablation rollouts, and 100,800 stress rollouts. The latent-asymmetry policy has a real local success gain over online system ID (`0.05159 +/- 0.02483`) and improves tracking/asymmetry error, but hard-split safety does not decisively beat online system ID (`0.18730` vs `0.18396`) and no robot hardware or accepted high-fidelity simulator validation is available.
+Reason: the v5 full rerun regenerated 199,680 main rollouts, 15,360 actuator summaries, 33,600 ablation rollouts, 302,400 stress rows, 69,120 fixed-risk rows, and 24 negative cases. The belief-state method has a real hard-aggregate success gain over v4 (`0.14566 +/- 0.01168` vs `0.12413 +/- 0.00938`, paired lower95 `0.00502`), but it fails tracking (`0.70018` vs `0.68686`), safety (`0.30466` vs `0.28271`), mechanism, fixed-risk, and scope gates. No robot hardware or accepted high-fidelity simulator validation is available.

@@ -1,35 +1,112 @@
-Paper 86 actuator_asymmetry_policy_state v4 rebuild
+Paper 86 actuator_asymmetry_policy_state v5 expanded audit
 Terminal recommendation: KILL_ARCHIVE
-Reason: deterministic local actuator-asymmetry benchmark added; no robot hardware or external high-fidelity benchmark is available.
-Main rollout rows: 40320
-Ablation rollout rows: 7056
-Stress rollout rows: 100800
-Seeds: [0, 1, 2, 3, 4, 5, 6]
+ICLR main ready: no
+Reason: expanded CPU-only actuator-asymmetry audit adds stronger adaptive/control-barrier/fault-observer baselines, theory hooks, ablations, stress sweeps, and fixed-risk tests, but no real robot or accepted high-fidelity benchmark evidence exists.
+Main rollout rows: 199680
+Dataset summary rows: 15360
+Main seed-metric rows: 1040
+Main metric rows: 1352
+Main pairwise rows: 768
+Hard aggregate seed rows: 130
+Hard aggregate metric rows: 169
+Hard aggregate pairwise rows: 96
+Ablation rollout rows: 33600
+Ablation seed rows: 200
+Ablation metric rows: 20
+Stress raw rows: 302400
+Stress seed rows: 2520
+Stress metric rows: 252
+Fixed-risk raw rows: 69120
+Fixed-risk seed rows: 480
+Fixed-risk metric rows: 48
+Fixed-risk pairwise rows: 200
+Negative cases: 24
 
-Combined hard shift:
-nominal_policy task_success=0.07738 ci95=0.01768 tracking=0.68391 safety=0.19620 energy=0.85471 asymmetry_error=0.66801
-domain_randomized_policy task_success=0.07639 ci95=0.01361 tracking=0.70167 safety=0.21961 energy=0.82258 asymmetry_error=0.66866
-scalar_gain_calibration task_success=0.08036 ci95=0.01753 tracking=0.69835 safety=0.20774 energy=0.89851 asymmetry_error=0.34200
-online_system_id task_success=0.09921 ci95=0.01178 tracking=0.66581 safety=0.18396 energy=1.02710 asymmetry_error=0.33933
-adaptive_mpc task_success=0.07639 ci95=0.01680 tracking=0.68601 safety=0.20208 energy=0.98863 asymmetry_error=0.32061
-robust_tube_mpc task_success=0.06051 ci95=0.01214 tracking=0.71605 safety=0.23509 energy=0.81441 asymmetry_error=0.43207
-latent_asymmetry_policy_state task_success=0.15079 ci95=0.01646 tracking=0.66073 safety=0.18730 energy=1.12601 asymmetry_error=0.29399
-oracle_asymmetry_state task_success=0.20635 ci95=0.03473 tracking=0.62879 safety=0.16128 energy=1.23341 asymmetry_error=0.28370
-paired task-success diff vs best success baseline online_system_id=0.05159 ci95=0.02483
+Frozen hard-aggregate gate:
+best_success_reference=latent_asymmetry_policy_state_v4
+best_tracking_reference=latent_asymmetry_policy_state_v4
+best_safety_reference=latent_asymmetry_policy_state_v4
+best_utility_reference=latent_asymmetry_policy_state_v4
+proposal_success=0.14566
+best_success=0.12413
+proposal_tracking=0.70018
+best_tracking=0.68686
+proposal_safety=0.30466
+best_safety=0.28271
+proposal_utility=-0.46242
+best_utility=-0.46948
+paired_success_lower95=0.00502
+paired_tracking_upper95=0.01884
+paired_safety_upper95=0.03008
+main_gate=False
+mechanism_gate=False
+stress_gate=True
+stress_dominated_by=none
+fixed_risk_gate=False
+scope_gate=False
+payload_contact_shift: v5_coverage=0.00000, best_feasible_coverage=0.00000, v5_success=0.00000, best_feasible_success=0.00000, v5_safety=0.00000, best_feasible_safety=0.00000 | combined_hard_shift: v5_coverage=0.00000, best_feasible_coverage=0.00000, v5_success=0.00000, best_feasible_success=0.00000, v5_safety=0.00000, best_feasible_safety=0.00000
 
-Ablations:
-full_latent_asymmetry_policy_state task_success=0.15079 ci95=0.01646 tracking=0.66073 safety=0.18730 energy=1.12601 asymmetry_error=0.29399
-minus_persistent_latent_memory task_success=0.08532 ci95=0.02030 tracking=0.68718 safety=0.19676 energy=0.97095 asymmetry_error=0.24631
-minus_sign_specific_asymmetry task_success=0.12500 ci95=0.02339 tracking=0.67072 safety=0.19041 energy=1.02138 asymmetry_error=0.30372
-minus_deadzone_saturation_state task_success=0.09623 ci95=0.01407 tracking=0.68045 safety=0.19676 energy=1.01073 asymmetry_error=0.29490
-minus_online_residual_update task_success=0.09921 ci95=0.02115 tracking=0.67068 safety=0.18985 energy=1.02610 asymmetry_error=0.24600
-scalar_only_latent_gain task_success=0.09424 ci95=0.01944 tracking=0.67687 safety=0.19918 energy=0.99919 asymmetry_error=0.33040
-no_safety_aware_action_clipping task_success=0.11012 ci95=0.02211 tracking=0.63297 safety=0.25724 energy=1.22342 asymmetry_error=0.29791
+Hard aggregate metrics:
+nominal_policy task_success=0.08958 ci95=0.01138 tracking=0.70042 safety=0.28825 asymmetry_error=0.53867 robust_utility=-0.56772
+domain_randomized_policy task_success=0.07830 ci95=0.00577 tracking=0.71755 safety=0.31214 asymmetry_error=0.49755 robust_utility=-0.58886
+scalar_gain_calibration task_success=0.08750 ci95=0.00969 tracking=0.70932 safety=0.29868 asymmetry_error=0.28189 robust_utility=-0.53269
+online_system_id task_success=0.10816 ci95=0.00849 tracking=0.69856 safety=0.29109 asymmetry_error=0.26826 robust_utility=-0.49550
+adaptive_mpc task_success=0.09601 ci95=0.00525 tracking=0.71265 safety=0.30956 asymmetry_error=0.25370 robust_utility=-0.52000
+robust_tube_mpc task_success=0.07500 ci95=0.00483 tracking=0.74219 safety=0.35121 asymmetry_error=0.33689 robust_utility=-0.58692
+control_barrier_fault_tolerant_mpc task_success=0.08542 ci95=0.00721 tracking=0.75263 safety=0.37487 asymmetry_error=0.28042 robust_utility=-0.57721
+unscented_kalman_fault_observer task_success=0.11389 ci95=0.00451 tracking=0.70062 safety=0.30104 asymmetry_error=0.26189 robust_utility=-0.49484
+recurrent_hidden_state_policy_proxy task_success=0.11840 ci95=0.00736 tracking=0.69240 safety=0.29040 asymmetry_error=0.25927 robust_utility=-0.48232
+robust_l1_adaptive_control task_success=0.09410 ci95=0.00617 tracking=0.73067 safety=0.33881 asymmetry_error=0.25506 robust_utility=-0.53813
+latent_asymmetry_policy_state_v4 task_success=0.12413 ci95=0.00938 tracking=0.68686 safety=0.28271 asymmetry_error=0.24282 robust_utility=-0.46948
+latent_asymmetry_belief_policy_v5 task_success=0.14566 ci95=0.01168 tracking=0.70018 safety=0.30466 asymmetry_error=0.24497 robust_utility=-0.46242
+oracle_asymmetry_state task_success=0.18507 ci95=0.01123 tracking=0.69021 safety=0.30626 asymmetry_error=0.24362 robust_utility=-0.42134
 
-Combined stress level 1.0:
-domain_randomized_policy task_success=0.03750 ci95=0.01773 tracking=0.81330 safety=0.38578 energy=0.91658 asymmetry_error=1.00625
-online_system_id task_success=0.05000 ci95=0.02268 tracking=0.79098 safety=0.36262 energy=1.28921 asymmetry_error=0.59613
-adaptive_mpc task_success=0.05000 ci95=0.02977 tracking=0.79828 safety=0.36703 energy=1.20062 asymmetry_error=0.55954
-robust_tube_mpc task_success=0.05357 ci95=0.01906 tracking=0.84662 safety=0.42298 energy=0.91337 asymmetry_error=0.70236
-latent_asymmetry_policy_state task_success=0.09107 ci95=0.02051 tracking=0.75429 safety=0.32929 energy=1.37284 asymmetry_error=0.51303
-oracle_asymmetry_state task_success=0.10000 ci95=0.02726 tracking=0.75567 safety=0.32893 energy=1.55793 asymmetry_error=0.48238
+Key paired hard-aggregate differences:
+v5_minus_latent_asymmetry_policy_state_v4 task_success: mean=0.02153 ci95=0.01651 lower95=0.00502 upper95=0.03804
+v5_minus_latent_asymmetry_policy_state_v4 tracking_error: mean=0.01332 ci95=0.00552 lower95=0.00780 upper95=0.01884
+v5_minus_latent_asymmetry_policy_state_v4 safety_violation: mean=0.02195 ci95=0.00813 lower95=0.01382 upper95=0.03008
+v5_minus_latent_asymmetry_policy_state_v4 asymmetry_error: mean=0.00216 ci95=0.00138 lower95=0.00077 upper95=0.00354
+v5_minus_latent_asymmetry_policy_state_v4 robust_utility: mean=0.00707 ci95=0.01990 lower95=-0.01283 upper95=0.02697
+v5_minus_robust_l1_adaptive_control task_success: mean=0.05156 ci95=0.00855 lower95=0.04301 upper95=0.06011
+v5_minus_robust_l1_adaptive_control tracking_error: mean=-0.03049 ci95=0.00530 lower95=-0.03580 upper95=-0.02519
+v5_minus_robust_l1_adaptive_control safety_violation: mean=-0.03415 ci95=0.00850 lower95=-0.04264 upper95=-0.02565
+v5_minus_robust_l1_adaptive_control asymmetry_error: mean=-0.01009 ci95=0.00211 lower95=-0.01220 upper95=-0.00798
+v5_minus_robust_l1_adaptive_control robust_utility: mean=0.07572 ci95=0.01344 lower95=0.06228 upper95=0.08916
+
+Ablation utility:
+full_latent_asymmetry_belief_policy_v5 success=0.13333 tracking=0.70994 safety=0.31940 utility=-0.49524
+minus_persistent_latent_memory success=0.10238 tracking=0.71935 safety=0.33100 utility=-0.54207
+minus_sign_specific_asymmetry success=0.09434 tracking=0.72872 safety=0.34056 utility=-0.54866
+minus_deadzone_saturation_state success=0.09851 tracking=0.73188 safety=0.34051 utility=-0.54495
+minus_latency_compensation success=0.11161 tracking=0.71558 safety=0.32540 utility=-0.52200
+minus_thermal_drift_update success=0.11428 tracking=0.70976 safety=0.32298 utility=-0.51520
+minus_online_residual_update success=0.09345 tracking=0.71813 safety=0.32954 utility=-0.55131
+minus_safety_aware_action_clipping success=0.13244 tracking=0.66556 safety=0.34474 utility=-0.50645
+scalar_only_latent_gain success=0.08988 tracking=0.73507 safety=0.34513 utility=-0.55828
+no_belief_uncertainty success=0.12172 tracking=0.71020 safety=0.32542 utility=-0.51080
+
+Maximum combined stress:
+domain_randomized_policy task_success=0.04000 tracking=0.85437 safety=0.49452 asymmetry_error=1.01340 utility=-0.89589
+online_system_id task_success=0.04667 tracking=0.85378 safety=0.49866 asymmetry_error=0.64656 utility=-0.82510
+control_barrier_fault_tolerant_mpc task_success=0.04500 tracking=0.88494 safety=0.52595 asymmetry_error=0.65635 utility=-0.83518
+unscented_kalman_fault_observer task_success=0.05417 tracking=0.83617 safety=0.47726 asymmetry_error=0.62254 utility=-0.79250
+robust_l1_adaptive_control task_success=0.05333 tracking=0.87692 safety=0.52521 asymmetry_error=0.61549 utility=-0.82050
+latent_asymmetry_belief_policy_v5 task_success=0.06833 tracking=0.83287 safety=0.48107 asymmetry_error=0.56013 utility=-0.76753
+oracle_asymmetry_state task_success=0.09917 tracking=0.81708 safety=0.46569 asymmetry_error=0.55180 utility=-0.72511
+
+Fixed-risk budget 0.05:
+combined_hard_shift control_barrier_fault_tolerant_mpc coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+combined_hard_shift latent_asymmetry_belief_policy_v5 coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+combined_hard_shift online_system_id coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+combined_hard_shift oracle_asymmetry_state coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+combined_hard_shift robust_l1_adaptive_control coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+combined_hard_shift unscented_kalman_fault_observer coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+payload_contact_shift control_barrier_fault_tolerant_mpc coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+payload_contact_shift latent_asymmetry_belief_policy_v5 coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+payload_contact_shift online_system_id coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+payload_contact_shift oracle_asymmetry_state coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+payload_contact_shift robust_l1_adaptive_control coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+payload_contact_shift unscented_kalman_fault_observer coverage=0.00000 accepted_success=0.00000 accepted_tracking=0.00000 accepted_safety=0.00000
+
+Negative cases: 24
+terminal=KILL_ARCHIVE
